@@ -1,19 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import {
+  loadTasks, saveTasks, upsertTask, toISO, fmtNextRun, countdown,
+  StoredTask,
+} from "@/lib/agentTasks";
+import { useAgentRunner } from "@/hooks/useAgentRunner";
 
 // ── Types ──────────────────────────────────────────────────
 type AgentMode  = "topup" | "autosplit" | "payout" | "distribute";
 type TaskStatus = "active" | "paused";
 type Freq       = "daily" | "weekly" | "monthly";
 
+// Legacy UI type — mapped from StoredTask for display
 interface AgentTask {
-  id: string;
-  mode: AgentMode;
-  label: string;
-  sublabel: string;
-  status: TaskStatus;
-  createdAt: string;
+  id:            string;
+  walletAddress: string;
+  mode:          AgentMode;
+  label:         string;
+  sublabel:      string;
+  status:        TaskStatus;
+  createdAt:     string;
+  nextRunAt:     string;
+  lastRunAt?:    string;
+  lastResult?:   "ok" | "fail";
+  lastError?:    string;
+  runCount:      number;
 }
 
 interface SplitRule  { address: string; pct: string; }
@@ -73,11 +85,36 @@ const FEATURE_CARDS = [
   },
 ];
 
+// ── Countdown ticker (re-renders every second) ─────────────
+function useCountdowns(tasks: AgentTask[]) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!tasks.some(t => t.status === "active")) return;
+    const id = setInterval(() => setTick(n => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [tasks]);
+}
+
 // ──────────────────────────────────────────────────────────
 export default function AgentPanel() {
   const [tasks,     setTasks]     = useState<AgentTask[]>([]);
   const [modal,     setModal]     = useState<AgentMode | null>(null);
   const [deploying, setDeploying] = useState(false);
+
+  // ── Load tasks from localStorage on mount ───────────────
+  useEffect(() => {
+    const stored = loadTasks();
+    setTasks(stored as AgentTask[]);
+  }, []);
+
+  // ── Client-side runner (checks every 20s) ───────────────
+  const handleRunnerUpdate = useCallback((updated: StoredTask[]) => {
+    setTasks(updated as AgentTask[]);
+  }, []);
+  useAgentRunner({ onUpdate: handleRunnerUpdate });
+
+  // Countdown ticker
+  useCountdowns(tasks);
   const [error,     setError]     = useState("");
 
   // ── Auto Top-Up ──────────────────────────────────────────
@@ -161,14 +198,38 @@ export default function AgentPanel() {
         distribute: { label: "Auto Distribute",     sublabel: `Distribute surplus above ${distCap} USDC → ${validDist.length} wallets · ${CHAINS.find(c => c.id === distChain)?.name}` },
       };
 
-      setTasks(prev => [{
-        id:        data.walletId,
-        mode:      modal!,
-        ...MAP[modal!],
-        status:    "active",
-        createdAt: new Date().toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" }),
-      }, ...prev]);
+      // ── Compute first nextRunAt ──────────────────────────
+      let nextRunAt = new Date(Date.now() + 60_000).toISOString(); // fallback: 1 min from now
+      if (modal === "payout" && validPayouts[0]?.firstDate && validPayouts[0]?.time) {
+        nextRunAt = toISO(validPayouts[0].firstDate, validPayouts[0].time);
+      } else if (modal === "autosplit") {
+        // First run: tomorrow same time
+        const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0);
+        nextRunAt = d.toISOString();
+      }
 
+      // ── Build config ─────────────────────────────────────
+      const configMap: Record<AgentMode, StoredTask["config"]> = {
+        topup:      { tuChain, tuThreshold, tuRefill, tuCap },
+        autosplit:  { splitTotal, splitFreq, splitRules },
+        payout:     { payoutFreq, payoutRules },
+        distribute: { distChain, distCap, distRules },
+      };
+
+      const storedTask: StoredTask = {
+        id:            data.walletId,
+        walletAddress: data.address ?? "",
+        mode:          modal!,
+        ...MAP[modal!],
+        status:        "active",
+        createdAt:     new Date().toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" }),
+        nextRunAt,
+        runCount:      0,
+        config:        configMap[modal!],
+      };
+
+      upsertTask(storedTask);
+      setTasks(loadTasks() as AgentTask[]);
       closeModal();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -177,10 +238,18 @@ export default function AgentPanel() {
     }
   };
 
-  const toggleTask = (id: string) =>
-    setTasks(p => p.map(t => t.id === id ? { ...t, status: t.status === "active" ? "paused" : "active" } : t));
-  const removeTask = (id: string) =>
-    setTasks(p => p.filter(t => t.id !== id));
+  const toggleTask = (id: string) => {
+    const updated = loadTasks().map(t =>
+      t.id === id ? { ...t, status: (t.status === "active" ? "paused" : "active") as TaskStatus } : t
+    );
+    saveTasks(updated);
+    setTasks(updated as AgentTask[]);
+  };
+  const removeTask = (id: string) => {
+    const updated = loadTasks().filter(t => t.id !== id);
+    saveTasks(updated);
+    setTasks(updated as AgentTask[]);
+  };
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6">
@@ -231,9 +300,33 @@ export default function AgentPanel() {
                     <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${
                       task.status === "active" ? "bg-success animate-pulse" : "bg-muted"
                     }`} />
+                    {task.lastResult === "ok" && (
+                      <span className="rounded bg-success/20 px-1.5 py-0.5 font-mono text-[9px] text-success">
+                        ✓ ran {task.runCount}×
+                      </span>
+                    )}
+                    {task.lastResult === "fail" && (
+                      <span className="rounded bg-red-bg px-1.5 py-0.5 font-mono text-[9px] text-red-primary" title={task.lastError}>
+                        ✗ failed
+                      </span>
+                    )}
                   </div>
                   <div className="mt-0.5 truncate font-mono text-[11px] text-muted">{task.sublabel}</div>
-                  <div className="mt-0.5 font-mono text-[10px] text-ink-border2">Created {task.createdAt}</div>
+                  <div className="mt-0.5 flex items-center gap-2">
+                    {task.status === "active" && task.nextRunAt && (
+                      <span className="font-mono text-[10px] text-red-primary">
+                        ⏱ {countdown(task.nextRunAt)}
+                      </span>
+                    )}
+                    <span className="font-mono text-[10px] text-ink-border2">
+                      Next: {fmtNextRun(task.nextRunAt)}
+                    </span>
+                    {task.lastRunAt && (
+                      <span className="font-mono text-[10px] text-muted">
+                        · Last: {fmtNextRun(task.lastRunAt)}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-shrink-0 items-center gap-2">
                   <button
