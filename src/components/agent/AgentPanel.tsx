@@ -6,6 +6,7 @@ import {
   StoredTask,
 } from "@/lib/agentTasks";
 import { useAgentRunner } from "@/hooks/useAgentRunner";
+import { useArcUsdcBalance } from "@/hooks/useTokenBalance";
 
 // ── Types ──────────────────────────────────────────────────
 type AgentMode  = "topup" | "autosplit" | "payout" | "distribute";
@@ -313,21 +314,9 @@ export default function AgentPanel() {
                   </div>
                   <div className="mt-0.5 truncate font-mono text-[11px] text-muted">{task.sublabel}</div>
 
-                  {/* Agent Wallet address — user needs to fund this */}
+                  {/* Agent Wallet address + balance */}
                   {task.walletAddress && (
-                    <div className="mt-1.5 flex items-center gap-1.5 rounded border border-yellow-500/30 bg-yellow-500/5 px-2 py-1">
-                      <span className="font-mono text-[9px] text-yellow-400">FUND →</span>
-                      <span className="flex-1 truncate font-mono text-[10px] text-yellow-300">
-                        {task.walletAddress}
-                      </span>
-                      <button
-                        onClick={() => navigator.clipboard.writeText(task.walletAddress)}
-                        className="flex-shrink-0 font-mono text-[9px] text-yellow-400 hover:text-yellow-200 transition-colors"
-                        title="Copy agent wallet address"
-                      >
-                        copy
-                      </button>
-                    </div>
+                    <AgentWalletRow address={task.walletAddress} />
                   )}
 
                   <div className="mt-0.5 flex items-center gap-2">
@@ -765,6 +754,55 @@ function PreviewLine({ icon, text, success }: { icon: string; text: string; succ
     <div className="flex items-start gap-2">
       <span className={`mt-0.5 font-mono text-xs ${success ? "text-success" : isBullet ? "text-muted" : "text-red-primary"}`}>{icon}</span>
       <span className={`font-mono text-xs ${success ? "text-success" : isBullet ? "text-muted" : "text-cream-dim"}`}>{text}</span>
+    </div>
+  );
+}
+
+// ── Agent Wallet Row (address + live USDC balance) ─────────
+function AgentWalletRow({ address }: { address: string }) {
+  const { balance, loading } = useArcUsdcBalance(address);
+  const [copied, setCopied] = useState(false);
+
+  const copy = () => {
+    navigator.clipboard.writeText(address);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  const balNum = parseFloat(balance);
+  const needsFunding = balNum < 0.01;
+
+  return (
+    <div className={`mt-1.5 rounded border px-2 py-1.5 ${
+      needsFunding
+        ? "border-yellow-500/30 bg-yellow-500/5"
+        : "border-success/30 bg-success/5"
+    }`}>
+      {/* Balance row */}
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <span className="font-mono text-[9px] text-muted">AGENT WALLET BALANCE</span>
+        <span className={`font-mono text-[11px] font-semibold ${needsFunding ? "text-yellow-400" : "text-success"}`}>
+          {loading ? "…" : `${parseFloat(balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`}
+        </span>
+      </div>
+      {/* Address row */}
+      <div className="flex items-center gap-1.5">
+        {needsFunding && <span className="font-mono text-[9px] text-yellow-400 flex-shrink-0">FUND →</span>}
+        <span className="flex-1 truncate font-mono text-[10px] text-muted">
+          {address}
+        </span>
+        <button
+          onClick={copy}
+          className="flex-shrink-0 font-mono text-[9px] text-muted hover:text-cream-white transition-colors"
+        >
+          {copied ? "✓ copied" : "copy"}
+        </button>
+      </div>
+      {needsFunding && (
+        <p className="mt-1 font-mono text-[9px] text-yellow-400/70">
+          Send USDC to this address before the agent runs
+        </p>
+      )}
     </div>
   );
 }
