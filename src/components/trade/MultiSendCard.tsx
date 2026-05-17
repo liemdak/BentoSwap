@@ -134,7 +134,7 @@ export default function MultiSendCard() {
 
         {/* ── Wallet balance ────────────────────────────── */}
         {isConnected && onArc && (
-          <div className="mb-3 flex items-center justify-between rounded-card border border-ink-border bg-ink-DEFAULT px-3 py-2">
+          <div className="mb-3 flex items-center justify-between rounded-card border border-ink-border bg-black px-3 py-2">
             <span className="font-mono text-[11px] text-muted">Wallet balance</span>
             <span className="font-mono text-[11px] text-cream-white">
               {parseFloat(balance).toLocaleString()} USDC
@@ -201,7 +201,7 @@ export default function MultiSendCard() {
                     onChange={(e) => updateRecipient(r.id, "address", e.target.value)}
                     placeholder="0x recipient address"
                     disabled={sending}
-                    className="min-w-0 flex-1 rounded border border-ink-border bg-ink-DEFAULT px-2.5 py-1.5 font-mono text-xs text-cream-white placeholder:text-muted focus:border-red-primary/50 focus:outline-none disabled:opacity-50"
+                    className="min-w-0 flex-1 rounded border border-ink-border bg-black px-2.5 py-1.5 font-mono text-xs text-white placeholder:text-muted focus:border-red-primary/50 focus:outline-none disabled:opacity-50"
                   />
 
                   <input
@@ -210,14 +210,14 @@ export default function MultiSendCard() {
                     onChange={(e) => updateRecipient(r.id, "amount", e.target.value)}
                     placeholder="0.00"
                     disabled={sending}
-                    className="w-24 rounded border border-ink-border bg-ink-DEFAULT px-2.5 py-1.5 font-mono text-xs text-cream-white placeholder:text-muted focus:border-red-primary/50 focus:outline-none disabled:opacity-50"
+                    className="w-24 rounded border border-ink-border bg-black px-2.5 py-1.5 font-mono text-xs text-white placeholder:text-muted focus:border-red-primary/50 focus:outline-none disabled:opacity-50"
                   />
 
                   <select
                     value={r.token}
                     onChange={(e) => updateRecipient(r.id, "token", e.target.value)}
                     disabled={sending}
-                    className="rounded border border-ink-border bg-ink-DEFAULT px-2 py-1.5 font-mono text-xs text-cream-white focus:outline-none disabled:opacity-50"
+                    className="rounded border border-ink-border bg-black px-2 py-1.5 font-mono text-xs text-white focus:outline-none disabled:opacity-50"
                   >
                     {TOKENS.map((t) => (
                       <option key={t} value={t} className="bg-ink-DEFAULT">
@@ -316,7 +316,7 @@ export default function MultiSendCard() {
 
         {/* ── Fee summary ──────────────────────────────── */}
         {!sending && !isComplete && validCount > 0 && (
-          <div className="mt-4 rounded-card border border-ink-border bg-ink-DEFAULT p-3">
+          <div className="mt-4 rounded-card border border-ink-border bg-black p-3">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[11px] text-muted">Total to send</span>
               <span className="font-mono text-[11px] text-cream-white">

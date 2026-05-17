@@ -84,11 +84,9 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-  /* Large inset shadow fakes the background colour */
-  -webkit-box-shadow: 0 0 0px 1000px #1F1A14 inset !important;
+  -webkit-box-shadow: 0 0 0px 1000px #000000 inset !important;
   -webkit-text-fill-color: #F5F0E8 !important;
   caret-color: #F5F0E8;
-  /* Delay Chrome from reverting the trick */
   transition: background-color 5000s ease-in-out 0s;
 }
 
