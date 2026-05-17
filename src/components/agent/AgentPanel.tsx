@@ -98,9 +98,10 @@ function useCountdowns(tasks: AgentTask[]) {
 
 // ──────────────────────────────────────────────────────────
 export default function AgentPanel() {
-  const [tasks,     setTasks]     = useState<AgentTask[]>([]);
-  const [modal,     setModal]     = useState<AgentMode | null>(null);
-  const [deploying, setDeploying] = useState(false);
+  const [tasks,        setTasks]        = useState<AgentTask[]>([]);
+  const [modal,        setModal]        = useState<AgentMode | null>(null);
+  const [deploying,    setDeploying]    = useState(false);
+  const [deployedInfo, setDeployedInfo] = useState<{ address: string; label: string } | null>(null);
 
   // ── Load tasks from localStorage on mount ───────────────
   useEffect(() => {
@@ -170,8 +171,8 @@ export default function AgentPanel() {
   const validDist    = distRules.filter(r => r.address.startsWith("0x") && parseFloat(r.pct) > 0);
 
   // ── Helpers ──────────────────────────────────────────────
-  const openModal  = (mode: AgentMode) => { setError(""); setModal(mode); };
-  const closeModal = () => { setModal(null); setDeploying(false); setError(""); };
+  const openModal  = (mode: AgentMode) => { setError(""); setModal(mode); setDeployedInfo(null); };
+  const closeModal = () => { setModal(null); setDeploying(false); setError(""); setDeployedInfo(null); };
 
   const canDeploy = () => {
     if (modal === "topup")      return !!tuThreshold && !!tuRefill && !!tuCap;
@@ -231,7 +232,8 @@ export default function AgentPanel() {
 
       upsertTask(storedTask);
       setTasks(loadTasks() as AgentTask[]);
-      closeModal();
+      // Show success state with wallet address + ArcScan link
+      setDeployedInfo({ address: data.address ?? "", label: MAP[modal!].label });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -387,7 +389,78 @@ export default function AgentPanel() {
             {/* Body */}
             <div className="max-h-[65vh] overflow-y-auto p-5 space-y-4">
 
-              {/* ── AUTO TOP-UP ──────────────────────────── */}
+              {/* ── SUCCESS SCREEN ────────────────────────── */}
+              {deployedInfo ? (
+                <div className="space-y-4">
+                  {/* Success header */}
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full border border-success/40 bg-success/10">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 13l4 4L19 7" stroke="#2D9B6F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-display text-lg text-cream-white">Agent Deployed!</p>
+                      <p className="mt-1 font-mono text-xs text-muted">{deployedInfo.label} is now active</p>
+                    </div>
+                  </div>
+
+                  {/* Agent wallet info */}
+                  {deployedInfo.address && (
+                    <div className="rounded-card border border-success/30 bg-success/5 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-[10px] tracking-widest text-success">AGENT WALLET</span>
+                        <a
+                          href={`https://testnet.arcscan.app/address/${deployedInfo.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 font-mono text-[10px] text-muted hover:text-cream-white transition-colors"
+                        >
+                          View on ArcScan
+                          <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 10L10 2M10 2H5M10 2v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>
+                        </a>
+                      </div>
+
+                      <p className="break-all font-mono text-xs text-cream-dim leading-relaxed">
+                        {deployedInfo.address}
+                      </p>
+
+                      {/* Fund reminder */}
+                      <div className="rounded border border-yellow-500/30 bg-yellow-500/5 px-3 py-2.5">
+                        <p className="font-mono text-[11px] text-yellow-400 leading-relaxed">
+                          ⚠ Fund this wallet with USDC before the agent runs
+                        </p>
+                        <p className="mt-1 font-mono text-[10px] text-muted">
+                          Send USDC to the address above. The agent will use it to execute transactions on your behalf.
+                        </p>
+                      </div>
+
+                      {/* What is this wallet? */}
+                      <div className="space-y-1 border-t border-ink-border pt-2">
+                        <p className="font-mono text-[10px] text-muted">
+                          · This is a <span className="text-cream-dim">Circle Developer Controlled Wallet</span> — unique to this task
+                        </p>
+                        <p className="font-mono text-[10px] text-muted">
+                          · Transactions are signed by Circle infrastructure — gasless via Paymaster
+                        </p>
+                        <p className="font-mono text-[10px] text-muted">
+                          · You can cancel this task anytime from the dashboard
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={closeModal}
+                    className="w-full rounded-lg bg-success py-3 font-body text-sm font-medium text-white transition-colors hover:opacity-90"
+                  >
+                    Done
+                  </button>
+                </div>
+              ) : (
+              <>{/* ── AUTO TOP-UP ──────────────────────────── */}
               {modal === "topup" && (
                 <>
                   <ConfigRow label="Source chain">
@@ -580,21 +653,24 @@ export default function AgentPanel() {
                   <p className="font-mono text-xs text-red-primary">{error}</p>
                 </div>
               )}
+              </>)}
             </div>
 
-            {/* Footer */}
-            <div className="border-t border-ink-border px-5 py-4">
-              <button
-                onClick={handleDeploy}
-                disabled={deploying || !canDeploy()}
-                className="w-full rounded-lg bg-red-primary py-3 font-body text-sm font-medium text-white transition-colors hover:bg-red-dim disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {deploying ? "Creating agent wallet..." : "Deploy Agent"}
-              </button>
-              <p className="mt-2.5 text-center font-mono text-[10px] text-muted">
-                1 EIP-712 signature · No gas required · Cancel anytime
-              </p>
-            </div>
+            {/* Footer — hidden on success screen */}
+            {!deployedInfo && (
+              <div className="border-t border-ink-border px-5 py-4">
+                <button
+                  onClick={handleDeploy}
+                  disabled={deploying || !canDeploy()}
+                  className="w-full rounded-lg bg-red-primary py-3 font-body text-sm font-medium text-white transition-colors hover:bg-red-dim disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {deploying ? "Creating agent wallet..." : "Deploy Agent"}
+                </button>
+                <p className="mt-2.5 text-center font-mono text-[10px] text-muted">
+                  1 EIP-712 signature · No gas required · Cancel anytime
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
