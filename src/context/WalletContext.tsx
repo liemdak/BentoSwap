@@ -82,6 +82,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     try {
       const prov = provider as Record<string, (...args: unknown[]) => unknown>;
 
+      // Force popup even if already connected (MetaMask may skip silently)
+      try {
+        await prov.request({
+          method: "wallet_requestPermissions",
+          params: [{ eth_accounts: {} }],
+        });
+      } catch {
+        // User cancelled or wallet doesn't support — fall through to eth_requestAccounts
+      }
+
       // Request accounts
       const accounts = (await prov.request({ method: "eth_requestAccounts" })) as string[];
       if (!accounts.length) throw new Error("No accounts returned");

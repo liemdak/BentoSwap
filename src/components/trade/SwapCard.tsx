@@ -87,15 +87,20 @@ export default function SwapCard() {
     };
 
     try {
+      const swapConfig: Record<string, unknown> = {
+        slippageBps: Math.round(parseFloat(activeSlippage || "0.5") * 100),
+      };
+      // Only pass kitKey if it has the correct KIT_KEY: format
+      if (CIRCLE_API_KEY?.startsWith("KIT_KEY:")) {
+        swapConfig.kitKey = CIRCLE_API_KEY;
+      }
+
       const result = await kit.swap({
         from: { adapter, chain: "Arc_Testnet" },
         tokenIn: fromToken,
         tokenOut: toToken,
         amountIn: fromAmount,
-        config: {
-          kitKey: CIRCLE_API_KEY,
-          slippageBps: Math.round(parseFloat(activeSlippage || "0.5") * 100),
-        },
+        config: swapConfig as Parameters<typeof kit.swap>[0]["config"],
       });
       setTxHash(result.txHash);
       setStatus("success");
