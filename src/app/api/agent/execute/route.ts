@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { StoredTask } from "@/lib/agentTasks";
+import { requireToken } from "@/lib/agentAuth";
 
 // Dynamically import Circle SDK (server-only)
 async function getCircleClient() {
@@ -16,8 +17,13 @@ const USDC_ARC = "0x3600000000000000000000000000000000000000";
 
 // POST /api/agent/execute  — run one task now
 export async function POST(req: NextRequest) {
-  const { task } = (await req.json()) as { task: StoredTask };
+  const body = (await req.json()) as { task: StoredTask; token?: string };
+  const { task, token } = body;
   if (!task) return NextResponse.json({ error: "Missing task" }, { status: 400 });
+
+  // Verify HMAC token — prevents unauthorized execution of arbitrary wallets
+  const auth = requireToken(task.id, token);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 401 });
 
   try {
     const client = await getCircleClient();

@@ -38,6 +38,7 @@ export interface TaskConfig {
 export interface StoredTask {
   id:            string;   // Circle walletId
   walletAddress: string;   // Circle agent wallet address (funded by user)
+  token:         string;   // HMAC token — required by server to authorize execution
   mode:          AgentMode;
   label:         string;
   sublabel:      string;

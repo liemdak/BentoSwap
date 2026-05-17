@@ -188,8 +188,9 @@ export default function AgentPanel() {
     setError("");
     try {
       const res  = await fetch("/api/agent/wallet", { method: "POST" });
-      const data = await res.json();
+      const data = await res.json() as { address?: string; walletId?: string; token?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? "Failed to create wallet");
+      if (!data.token) throw new Error("Server did not return auth token");
 
       const freqLabel = (f: Freq) => FREQ_OPTS.find(o => o.value === f)?.label ?? f;
 
@@ -219,8 +220,9 @@ export default function AgentPanel() {
       };
 
       const storedTask: StoredTask = {
-        id:            data.walletId,
+        id:            data.walletId!,
         walletAddress: data.address ?? "",
+        token:         data.token!,   // HMAC token for server-side auth
         mode:          modal!,
         ...MAP[modal!],
         status:        "active",
