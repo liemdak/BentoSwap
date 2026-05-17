@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useWallet } from "@/context/WalletContext";
+import { useArcUsdcBalance } from "@/hooks/useTokenBalance";
+import { kit } from "@/lib/kit";
+import { ARC_CHAIN_ID } from "@/lib/chains";
 
 const TOKENS = ["USDC", "EURC", "USYC"] as const;
 type TokenSymbol = (typeof TOKENS)[number];
@@ -12,21 +16,37 @@ interface Recipient {
   token: TokenSymbol;
 }
 
-const NETWORK_FEE_PER_TX = 0.001; // USDC per transaction (mock)
+interface SendResult {
+  id: number;
+  status: "ok" | "fail";
+  txHash?: string;
+  explorerUrl?: string;
+  error?: string;
+}
+
+const NETWORK_FEE_PER_TX = 0.001; // USDC per tx (estimate)
 
 let nextId = 1;
 
 export default function MultiSendCard() {
+  const { address, adapter, chainId, isConnected, switchToArc } = useWallet();
+  const { balance, refresh: refreshBalance } = useArcUsdcBalance(address);
+
   const [recipients, setRecipients] = useState<Recipient[]>([
     { id: nextId++, address: "", amount: "", token: "USDC" },
   ]);
-  const [sending, setSending] = useState(false);
+  const [sending,  setSending]  = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
-  const [results, setResults] = useState<{ id: number; status: "ok" | "fail"; txHash?: string }[]>([]);
+  const [results,  setResults]  = useState<SendResult[]>([]);
+
+  const onArc = chainId === ARC_CHAIN_ID;
 
   const totalAmount = recipients.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
-  const totalFee = recipients.length * NETWORK_FEE_PER_TX;
-  const validCount = recipients.filter((r) => r.address && r.amount && parseFloat(r.amount) > 0).length;
+  const totalFee    = recipients.length * NETWORK_FEE_PER_TX;
+  const validRecipients = recipients.filter(
+    (r) => r.address.startsWith("0x") && r.address.length === 42 && r.amount && parseFloat(r.amount) > 0
+  );
+  const validCount = validRecipients.length;
 
   const addRecipient = () => {
     if (recipients.length >= 20) return;
@@ -42,29 +62,56 @@ export default function MultiSendCard() {
     setRecipients((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
   };
 
-  // Simulate multi-send with progress
+  // ── Real kit.send() loop ───────────────────────────────────
   const handleSend = async () => {
-    const valid = recipients.filter((r) => r.address && r.amount && parseFloat(r.amount) > 0);
-    if (valid.length === 0) return;
+    if (!adapter || validCount === 0) return;
 
     setSending(true);
     setProgress(0);
     setResults([]);
 
-    for (let i = 0; i < valid.length; i++) {
+    for (let i = 0; i < validRecipients.length; i++) {
+      const r = validRecipients[i];
       setProgress(i);
-      // Simulate kit.send() call (~0.5s per tx on Arc)
-      await new Promise((res) => setTimeout(res, 600));
-      // Simulated tx hash — replace with real kit.send() hash when integrated
-      const fakeTxHash = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-      setResults((prev) => [...prev, { id: valid[i].id, status: "ok", txHash: fakeTxHash }]);
+
+      try {
+        const result = await kit.send({
+          from: { adapter, chain: "Arc_Testnet" },
+          to: r.address,
+          amount: r.amount,
+          token: r.token,
+        });
+
+        setResults((prev) => [
+          ...prev,
+          {
+            id: r.id,
+            status: "ok",
+            txHash: result.txHash,
+            explorerUrl: result.explorerUrl ?? `https://testnet.arcscan.app/tx/${result.txHash}`,
+          },
+        ]);
+      } catch (e: unknown) {
+        setResults((prev) => [
+          ...prev,
+          {
+            id: r.id,
+            status: "fail",
+            error: (e as Error).message ?? "Transaction failed",
+          },
+        ]);
+        // Continue with remaining recipients even if one fails
+      }
     }
 
     setProgress(null);
     setSending(false);
+    refreshBalance();
   };
 
   const isComplete = results.length > 0 && progress === null;
+  const successCount = results.filter((r) => r.status === "ok").length;
+  const failCount    = results.filter((r) => r.status === "fail").length;
 
   return (
     <div className="mx-auto w-full max-w-lg">
@@ -85,6 +132,16 @@ export default function MultiSendCard() {
           </span>
         </div>
 
+        {/* ── Wallet balance ────────────────────────────── */}
+        {isConnected && onArc && (
+          <div className="mb-3 flex items-center justify-between rounded-card border border-ink-border bg-ink-DEFAULT px-3 py-2">
+            <span className="font-mono text-[11px] text-muted">Wallet balance</span>
+            <span className="font-mono text-[11px] text-cream-white">
+              {parseFloat(balance).toLocaleString()} USDC
+            </span>
+          </div>
+        )}
+
         {/* ── Recipient rows ────────────────────────────── */}
         <div className="space-y-2">
           {recipients.map((r, idx) => {
@@ -97,26 +154,35 @@ export default function MultiSendCard() {
                 className={`rounded-card border p-3 transition-colors ${
                   result?.status === "ok"
                     ? "border-success/40 bg-success/5"
+                    : result?.status === "fail"
+                    ? "border-red-primary/40 bg-red-bg"
                     : isCurrent
                     ? "border-red-primary/40 bg-red-bg"
                     : "border-ink-border2 bg-ink-surface2"
                 }`}
               >
                 <div className="mb-2 flex items-center gap-1">
-                  {/* Row number */}
                   <span className="w-5 font-mono text-[10px] text-muted">{idx + 1}.</span>
 
-                  {/* Status icon */}
                   {result?.status === "ok" && (
                     <span className="text-success text-xs">✓</span>
+                  )}
+                  {result?.status === "fail" && (
+                    <span className="text-red-primary text-xs">✗</span>
                   )}
                   {isCurrent && (
                     <span className="h-2 w-2 rounded-full bg-red-primary animate-pulse" />
                   )}
 
+                  {/* Show error message inline */}
+                  {result?.status === "fail" && result.error && (
+                    <span className="ml-1 flex-1 truncate font-mono text-[9px] text-red-primary">
+                      {result.error}
+                    </span>
+                  )}
+
                   <div className="flex-1" />
 
-                  {/* Remove button */}
                   <button
                     onClick={() => removeRecipient(r.id)}
                     disabled={recipients.length === 1 || sending}
@@ -129,7 +195,6 @@ export default function MultiSendCard() {
                 </div>
 
                 <div className="flex gap-2">
-                  {/* Address input */}
                   <input
                     type="text"
                     value={r.address}
@@ -139,7 +204,6 @@ export default function MultiSendCard() {
                     className="min-w-0 flex-1 rounded border border-ink-border bg-ink-DEFAULT px-2.5 py-1.5 font-mono text-xs text-cream-white placeholder:text-muted focus:border-red-primary/50 focus:outline-none disabled:opacity-50"
                   />
 
-                  {/* Amount */}
                   <input
                     type="number"
                     value={r.amount}
@@ -149,7 +213,6 @@ export default function MultiSendCard() {
                     className="w-24 rounded border border-ink-border bg-ink-DEFAULT px-2.5 py-1.5 font-mono text-xs text-cream-white placeholder:text-muted focus:border-red-primary/50 focus:outline-none disabled:opacity-50"
                   />
 
-                  {/* Token selector */}
                   <select
                     value={r.token}
                     onChange={(e) => updateRecipient(r.id, "token", e.target.value)}
@@ -182,10 +245,8 @@ export default function MultiSendCard() {
         {sending && progress !== null && (
           <div className="mt-4">
             <div className="mb-1.5 flex justify-between font-mono text-[11px] text-muted">
-              <span>Sending...</span>
-              <span>
-                {results.length} / {validCount}
-              </span>
+              <span>Sending {results.length + 1} of {validCount}...</span>
+              <span>{results.length} / {validCount}</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-ink-border">
               <div
@@ -194,38 +255,62 @@ export default function MultiSendCard() {
               />
             </div>
             <p className="mt-1.5 font-mono text-[10px] text-muted">
-              Each tx ~0.48s on Arc Testnet
+              Each tx waits for on-chain confirmation (~2 blocks on Arc)
             </p>
           </div>
         )}
 
-        {/* ── Success summary ──────────────────────────── */}
+        {/* ── Success / partial summary ────────────────── */}
         {isComplete && (
           <div className="mt-4 rounded-card border border-success/30 bg-success/5 p-3">
             <div className="flex items-center gap-2">
               <span className="text-success">✓</span>
               <span className="font-mono text-sm text-success">
-                {results.filter((r) => r.status === "ok").length} transactions sent
+                {successCount} of {validCount} transactions sent
               </span>
+              {failCount > 0 && (
+                <span className="ml-auto font-mono text-[10px] text-red-primary">
+                  {failCount} failed
+                </span>
+              )}
             </div>
             <p className="mt-1 font-mono text-[11px] text-muted">
-              Total sent: {totalAmount.toFixed(2)} USDC · Fee: {totalFee.toFixed(3)} USDC
+              Total sent: {totalAmount.toFixed(2)} USDC · Est. fee: {totalFee.toFixed(3)} USDC
             </p>
+
             {/* Per-tx ArcScan links */}
-            <div className="mt-2 space-y-1 border-t border-success/20 pt-2">
-              {results.filter((r) => r.status === "ok" && r.txHash).map((r, idx) => (
-                <a
-                  key={r.id}
-                  href={`https://testnet.arcscan.app/tx/${r.txHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between gap-2 font-mono text-[10px] text-muted hover:text-success transition-colors"
-                >
-                  <span>Tx {idx + 1} — {r.txHash!.slice(0, 10)}...{r.txHash!.slice(-6)}</span>
-                  <span className="text-success/70">↗ ArcScan</span>
-                </a>
-              ))}
-            </div>
+            {results.some((r) => r.txHash) && (
+              <div className="mt-2 space-y-1 border-t border-success/20 pt-2">
+                {results.map((r, idx) => (
+                  <div key={r.id} className="flex items-center justify-between gap-2">
+                    {r.txHash ? (
+                      <a
+                        href={r.explorerUrl ?? `https://testnet.arcscan.app/tx/${r.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-[10px] text-muted hover:text-success transition-colors"
+                      >
+                        Tx {idx + 1} — {r.txHash.slice(0, 10)}...{r.txHash.slice(-6)}
+                      </a>
+                    ) : (
+                      <span className="font-mono text-[10px] text-red-primary">
+                        Tx {idx + 1} — failed
+                      </span>
+                    )}
+                    {r.txHash && (
+                      <a
+                        href={r.explorerUrl ?? `https://testnet.arcscan.app/tx/${r.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-[10px] text-success/70 hover:text-success transition-colors"
+                      >
+                        ↗ ArcScan
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -255,23 +340,38 @@ export default function MultiSendCard() {
           </div>
         )}
 
-        {/* ── Send button ──────────────────────────────── */}
+        {/* ── Action button ─────────────────────────────── */}
         {!isComplete && (
-          <button
-            disabled={sending || validCount === 0}
-            onClick={handleSend}
-            className={`mt-4 w-full rounded-lg py-3.5 font-body text-base font-medium transition-all ${
-              sending || validCount === 0
-                ? "cursor-not-allowed bg-ink-border2 text-muted"
-                : "bg-red-primary text-white hover:bg-red-dim"
-            }`}
-          >
-            {sending
-              ? `Sending ${results.length + 1} of ${validCount}...`
-              : validCount === 0
-              ? "Add recipients to continue"
-              : `Send to ${validCount} address${validCount > 1 ? "es" : ""}`}
-          </button>
+          <>
+            {!isConnected ? (
+              <div className="mt-4 rounded-lg border border-ink-border2 bg-ink-surface2 py-3.5 text-center font-body text-sm text-muted">
+                Connect wallet to send
+              </div>
+            ) : !onArc ? (
+              <button
+                onClick={switchToArc}
+                className="mt-4 w-full rounded-lg border border-red-primary bg-red-bg py-3.5 font-body text-base font-medium text-red-primary hover:bg-red-primary hover:text-white transition-colors"
+              >
+                Switch to Arc Testnet
+              </button>
+            ) : (
+              <button
+                disabled={sending || validCount === 0}
+                onClick={handleSend}
+                className={`mt-4 w-full rounded-lg py-3.5 font-body text-base font-medium transition-all ${
+                  sending || validCount === 0
+                    ? "cursor-not-allowed bg-ink-border2 text-muted"
+                    : "bg-red-primary text-white hover:bg-red-dim"
+                }`}
+              >
+                {sending
+                  ? `Sending ${results.length + 1} of ${validCount}...`
+                  : validCount === 0
+                  ? "Add valid recipients to continue"
+                  : `Send to ${validCount} address${validCount > 1 ? "es" : ""}`}
+              </button>
+            )}
+          </>
         )}
 
         {isComplete && (
