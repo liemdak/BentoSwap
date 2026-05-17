@@ -26,7 +26,8 @@ export function useGatewayBalance(walletAddress: string | null) {
     try {
       const result = await kit.unifiedBalance.getBalances({
         token:          "USDC",
-        sources:        { account: walletAddress },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        sources:        { account: walletAddress } as any,
         includePending: true,
         networkType:    "testnet",
       });
