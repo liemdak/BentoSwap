@@ -360,15 +360,15 @@ export default function AgentPanel() {
                               type="text" value={r.name}
                               onChange={e => updatePayout(i, "name", e.target.value)}
                               placeholder="Name"
-                              className="w-24 flex-shrink-0 rounded border border-ink-border bg-ink-DEFAULT px-2.5 py-2 font-mono text-xs text-cream-white placeholder:text-muted focus:outline-none"
+                              className="w-24 flex-shrink-0 rounded border border-ink-border bg-black px-2.5 py-2 font-mono text-xs text-white placeholder:text-muted focus:outline-none"
                             />
                             <input
                               type="text" value={r.address}
                               onChange={e => updatePayout(i, "address", e.target.value)}
                               placeholder="0x wallet address"
-                              className="min-w-0 flex-1 rounded border border-ink-border bg-ink-DEFAULT px-2.5 py-2 font-mono text-xs text-cream-white placeholder:text-muted focus:outline-none"
+                              className="min-w-0 flex-1 rounded border border-ink-border bg-black px-2.5 py-2 font-mono text-xs text-white placeholder:text-muted focus:outline-none"
                             />
-                            <div className="flex flex-shrink-0 items-center gap-1 rounded border border-ink-border bg-ink-DEFAULT px-2 py-2">
+                            <div className="flex flex-shrink-0 items-center gap-1 rounded border border-ink-border bg-black px-2 py-2">
                               <input
                                 type="number" value={r.amount}
                                 onChange={e => updatePayout(i, "amount", e.target.value)}
@@ -389,13 +389,13 @@ export default function AgentPanel() {
                               type="date" value={r.firstDate}
                               min={new Date().toISOString().split("T")[0]}
                               onChange={e => updatePayout(i, "firstDate", e.target.value)}
-                              className="rounded border border-ink-border bg-ink-DEFAULT px-2.5 py-1.5 font-mono text-xs text-cream-white focus:outline-none"
+                              className="rounded border border-ink-border bg-black px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none"
                             />
                             <span className="font-mono text-[10px] text-muted">at</span>
                             <input
                               type="time" value={r.time}
                               onChange={e => updatePayout(i, "time", e.target.value)}
-                              className="rounded border border-ink-border bg-ink-DEFAULT px-2.5 py-1.5 font-mono text-xs text-cream-white focus:outline-none"
+                              className="rounded border border-ink-border bg-black px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none"
                             />
                             {r.firstDate && (
                               <span className="font-mono text-[10px] text-muted">
@@ -608,7 +608,7 @@ function SplitRuleList({ rules, totalAmount, onUpdate, onRemove, onAdd, minRules
           </div>
           <input type="text" value={r.address} onChange={e => onUpdate(i, "address", e.target.value)}
             placeholder="0x wallet address"
-            className="min-w-0 flex-1 rounded border border-ink-border2 bg-ink-surface2 px-2.5 py-2 font-mono text-xs text-cream-white placeholder:text-muted focus:outline-none" />
+            className="min-w-0 flex-1 rounded border border-ink-border2 bg-black px-2.5 py-2 font-mono text-xs text-white placeholder:text-muted focus:outline-none" />
           {!hidePctAmount && (
             <span className="w-20 flex-shrink-0 text-right font-mono text-xs text-muted">
               {totalAmount > 0 && parseFloat(r.pct) > 0

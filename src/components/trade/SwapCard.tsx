@@ -175,7 +175,7 @@ export default function SwapCard() {
                 <div className="relative">
                   <button
                     onClick={() => { setFromSelector(!fromSelector); setToSelector(false); }}
-                    className="flex items-center gap-2 rounded-lg border border-ink-border2 bg-ink-DEFAULT px-3 py-2 font-mono text-sm font-medium text-cream-white hover:border-red-primary/40 transition-colors"
+                    className="flex items-center gap-2 rounded-lg border border-ink-border2 bg-black px-3 py-2 font-mono text-sm font-medium text-white hover:border-red-primary/40 transition-colors"
                   >
                     <TokenIcon symbol={fromToken} size={20} />
                     {fromToken}
@@ -235,7 +235,7 @@ export default function SwapCard() {
                 <div className="relative">
                   <button
                     onClick={() => { setToSelector(!toSelector); setFromSelector(false); }}
-                    className="flex items-center gap-2 rounded-lg border border-ink-border2 bg-ink-DEFAULT px-3 py-2 font-mono text-sm font-medium text-cream-white hover:border-red-primary/40 transition-colors"
+                    className="flex items-center gap-2 rounded-lg border border-ink-border2 bg-black px-3 py-2 font-mono text-sm font-medium text-white hover:border-red-primary/40 transition-colors"
                   >
                     <TokenIcon symbol={toToken} size={20} />
                     {toToken}
@@ -319,7 +319,7 @@ export default function SwapCard() {
                   value={destAddress}
                   onChange={(e) => setDestAddress(e.target.value)}
                   placeholder="0x..."
-                  className="mt-2 w-full rounded border border-ink-border2 bg-ink-surface2 px-3 py-2 font-mono text-sm text-cream-white placeholder:text-muted focus:border-red-primary/50 focus:outline-none"
+                  className="mt-2 w-full rounded border border-ink-border2 bg-black px-3 py-2 font-mono text-sm text-white placeholder:text-muted focus:border-red-primary/50 focus:outline-none"
                 />
               )}
             </div>

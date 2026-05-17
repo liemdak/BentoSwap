@@ -283,7 +283,7 @@ function ChainPicker({
     <div className="relative flex-shrink-0">
       <button
         onClick={onToggle}
-        className="flex items-center gap-2 rounded-lg border border-ink-border2 bg-ink-DEFAULT px-3 py-2 font-mono text-sm font-medium text-cream-white hover:border-red-primary/40 transition-colors"
+        className="flex items-center gap-2 rounded-lg border border-ink-border2 bg-black px-3 py-2 font-mono text-sm font-medium text-white hover:border-red-primary/40 transition-colors"
       >
         <span
           className="h-3 w-3 rounded-full"
