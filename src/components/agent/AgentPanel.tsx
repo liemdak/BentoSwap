@@ -7,6 +7,8 @@ import {
 } from "@/lib/agentTasks";
 import { useAgentRunner } from "@/hooks/useAgentRunner";
 import { useArcUsdcBalance } from "@/hooks/useTokenBalance";
+import { useWallet } from "@/context/WalletContext";
+import { kit } from "@/lib/kit";
 
 // ── Types ──────────────────────────────────────────────────
 type AgentMode  = "topup" | "autosplit" | "payout" | "distribute";
@@ -836,10 +838,16 @@ function PreviewLine({ icon, text, success }: { icon: string; text: string; succ
   );
 }
 
-// ── Agent Wallet Row (address + live USDC balance) ─────────
+// ── Agent Wallet Row (address + live USDC balance + Fund) ──
 function AgentWalletRow({ address }: { address: string }) {
-  const { balance, loading } = useArcUsdcBalance(address);
-  const [copied, setCopied] = useState(false);
+  const { balance, loading, refresh } = useArcUsdcBalance(address);
+  const { adapter, isConnected } = useWallet();
+  const [copied,     setCopied]     = useState(false);
+  const [showFund,   setShowFund]   = useState(false);
+  const [fundAmt,    setFundAmt]    = useState("");
+  const [fundState,  setFundState]  = useState<"idle"|"loading"|"done"|"error">("idle");
+  const [fundErr,    setFundErr]    = useState("");
+  const [fundTxHash, setFundTxHash] = useState("");
 
   const copy = () => {
     navigator.clipboard.writeText(address);
@@ -850,36 +858,117 @@ function AgentWalletRow({ address }: { address: string }) {
   const balNum = parseFloat(balance);
   const needsFunding = balNum < 0.01;
 
+  const handleFund = async () => {
+    if (!adapter || !fundAmt || parseFloat(fundAmt) <= 0) return;
+    setFundState("loading"); setFundErr("");
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (kit as any).send({
+        from:        { adapter },
+        to:          [{ address, amount: fundAmt, token: "USDC" }],
+        networkType: "testnet",
+      });
+      const hash = result?.txHash ?? result?.results?.[0]?.txHash ?? "";
+      setFundTxHash(hash);
+      setFundState("done");
+      setFundAmt("");
+      // Refresh balance after 3s
+      setTimeout(refresh, 3000);
+    } catch (e: unknown) {
+      setFundErr((e as Error).message ?? "Fund failed");
+      setFundState("error");
+    }
+  };
+
   return (
-    <div className={`mt-1.5 rounded border px-2 py-1.5 ${
-      needsFunding
-        ? "border-yellow-500/30 bg-yellow-500/5"
-        : "border-success/30 bg-success/5"
+    <div className={`mt-1.5 rounded border ${
+      needsFunding ? "border-yellow-500/30 bg-yellow-500/5" : "border-success/30 bg-success/5"
     }`}>
-      {/* Balance row */}
-      <div className="flex items-center justify-between gap-2 mb-1">
-        <span className="font-mono text-[9px] text-muted">AGENT WALLET BALANCE</span>
-        <span className={`font-mono text-[11px] font-semibold ${needsFunding ? "text-yellow-400" : "text-success"}`}>
-          {loading ? "…" : `${parseFloat(balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`}
-        </span>
+
+      {/* ── Main row ── */}
+      <div className="flex items-center gap-2 px-2 py-1.5">
+        {/* Balance */}
+        <div className="flex flex-1 items-center justify-between gap-2">
+          <span className="font-mono text-[9px] text-muted">AGENT WALLET</span>
+          <span className={`font-mono text-[11px] font-semibold ${needsFunding ? "text-yellow-400" : "text-success"}`}>
+            {loading ? "…" : `${balNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`}
+          </span>
+        </div>
+
+        {/* Buttons */}
+        <div className="flex flex-shrink-0 items-center gap-1.5">
+          {isConnected && needsFunding && (
+            <button
+              onClick={() => { setShowFund(f => !f); setFundState("idle"); setFundErr(""); }}
+              className={`rounded border px-2 py-1 font-mono text-[9px] font-medium transition-colors ${
+                showFund
+                  ? "border-yellow-500/60 bg-yellow-500/15 text-yellow-400"
+                  : "border-yellow-500/40 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20"
+              }`}
+            >
+              {showFund ? "✕ Close" : "⚡ Fund"}
+            </button>
+          )}
+          <button onClick={copy} className="font-mono text-[9px] text-muted hover:text-cream-white transition-colors px-1">
+            {copied ? "✓" : "copy"}
+          </button>
+        </div>
       </div>
-      {/* Address row */}
-      <div className="flex items-center gap-1.5">
-        {needsFunding && <span className="font-mono text-[9px] text-yellow-400 flex-shrink-0">FUND →</span>}
-        <span className="flex-1 truncate font-mono text-[10px] text-muted">
-          {address}
-        </span>
-        <button
-          onClick={copy}
-          className="flex-shrink-0 font-mono text-[9px] text-muted hover:text-cream-white transition-colors"
-        >
-          {copied ? "✓ copied" : "copy"}
-        </button>
+
+      {/* Address */}
+      <div className="truncate px-2 pb-1.5 font-mono text-[10px] text-muted">
+        {address}
       </div>
-      {needsFunding && (
-        <p className="mt-1 font-mono text-[9px] text-yellow-400/70">
-          Send USDC to this address before the agent runs
-        </p>
+
+      {/* ── Fund panel ── */}
+      {showFund && (
+        <div className="border-t border-yellow-500/20 px-2 py-2 space-y-1.5">
+          {fundState === "done" ? (
+            <div className="space-y-1">
+              <p className="font-mono text-[10px] text-success">✓ Funded successfully</p>
+              {fundTxHash && (
+                <a
+                  href={`https://testnet.arcscan.app/tx/${fundTxHash}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="block font-mono text-[9px] text-success/70 hover:text-success"
+                >
+                  {fundTxHash.slice(0,10)}...{fundTxHash.slice(-6)} ↗
+                </a>
+              )}
+              <button
+                onClick={() => { setFundState("idle"); setShowFund(false); }}
+                className="font-mono text-[9px] text-muted hover:text-cream-white"
+              >
+                Close
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  value={fundAmt}
+                  onChange={e => setFundAmt(e.target.value)}
+                  placeholder="Amount"
+                  disabled={fundState === "loading"}
+                  className="min-w-0 flex-1 rounded border border-yellow-500/30 bg-black px-2.5 py-1.5 font-mono text-xs text-white placeholder:text-muted focus:outline-none disabled:opacity-50"
+                />
+                <span className="font-mono text-[9px] text-muted flex-shrink-0">USDC</span>
+                <button
+                  onClick={handleFund}
+                  disabled={fundState === "loading" || !fundAmt || parseFloat(fundAmt) <= 0}
+                  className="flex-shrink-0 rounded border border-yellow-500/50 bg-yellow-500/10 px-3 py-1.5 font-mono text-[10px] text-yellow-400 transition-colors hover:bg-yellow-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {fundState === "loading" ? "…" : "Send"}
+                </button>
+              </div>
+              {fundErr && <p className="font-mono text-[9px] text-red-primary">{fundErr}</p>}
+              <p className="font-mono text-[9px] text-muted">
+                Transfers USDC from your wallet → agent wallet on Arc
+              </p>
+            </>
+          )}
+        </div>
       )}
     </div>
   );
