@@ -79,6 +79,19 @@ body {
 /* ── Selection ──────────────────────────────────────────── */
 ::selection { background: rgba(200,16,46,0.2); color: #16120E; }
 
+/* ── Browser autofill override (keeps dark-card inputs readable) ── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  /* Large inset shadow fakes the background colour */
+  -webkit-box-shadow: 0 0 0px 1000px #1F1A14 inset !important;
+  -webkit-text-fill-color: #F5F0E8 !important;
+  caret-color: #F5F0E8;
+  /* Delay Chrome from reverting the trick */
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* ── Hide number input spinners ─────────────────────────── */
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
