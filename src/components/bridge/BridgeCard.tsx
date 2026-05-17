@@ -3,17 +3,18 @@
 import { useState } from "react";
 import { useWallet } from "@/context/WalletContext";
 import { kit } from "@/lib/kit";
+import { useChainUsdcBalance } from "@/hooks/useChainUsdcBalance";
 
 // ── Chain definitions ──────────────────────────────────────
 const CHAINS = [
-  { id: "arc",  name: "Arc Testnet",       short: "Arc",   color: "#C8102E", bridgeChain: "Arc_Testnet",          chainId: 5042002,   rpc: "https://rpc.testnet.arc.network" },
-  { id: "eth",  name: "Ethereum Sepolia",  short: "ETH",   color: "#627EEA", bridgeChain: "Ethereum_Sepolia",     chainId: 11155111,  rpc: "https://rpc.sepolia.org" },
-  { id: "base", name: "Base Sepolia",      short: "Base",  color: "#0052FF", bridgeChain: "Base_Sepolia",         chainId: 84532,     rpc: "https://sepolia.base.org" },
-  { id: "arb",  name: "Arbitrum Sepolia",  short: "ARB",   color: "#12AAFF", bridgeChain: "Arbitrum_Sepolia",     chainId: 421614,    rpc: "https://sepolia-rollup.arbitrum.io/rpc" },
-  { id: "op",   name: "Optimism Sepolia",  short: "OP",    color: "#FF0420", bridgeChain: "Optimism_Sepolia",     chainId: 11155420,  rpc: "https://sepolia.optimism.io" },
-  { id: "poly", name: "Polygon Amoy",      short: "MATIC", color: "#8247E5", bridgeChain: "Polygon_Amoy_Testnet", chainId: 80002,     rpc: "https://rpc-amoy.polygon.technology" },
-  { id: "avax", name: "Avalanche Fuji",    short: "AVAX",  color: "#E84142", bridgeChain: "Avalanche_Fuji",       chainId: 43113,     rpc: "https://api.avax-test.network/ext/bc/C/rpc" },
-  { id: "uni",  name: "Unichain Sepolia",  short: "UNI",   color: "#FF007A", bridgeChain: "Unichain_Sepolia",     chainId: 1301,      rpc: "https://sepolia.unichain.org" },
+  { id: "arc",  name: "Arc Testnet",       short: "Arc",   color: "#C8102E", bridgeChain: "Arc_Testnet",          chainId: 5042002,   rpc: "https://rpc.testnet.arc.network",                        usdc: "0x3600000000000000000000000000000000000000" },
+  { id: "eth",  name: "Ethereum Sepolia",  short: "ETH",   color: "#627EEA", bridgeChain: "Ethereum_Sepolia",     chainId: 11155111,  rpc: "https://rpc.sepolia.org",                                usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" },
+  { id: "base", name: "Base Sepolia",      short: "Base",  color: "#0052FF", bridgeChain: "Base_Sepolia",         chainId: 84532,     rpc: "https://sepolia.base.org",                               usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e" },
+  { id: "arb",  name: "Arbitrum Sepolia",  short: "ARB",   color: "#12AAFF", bridgeChain: "Arbitrum_Sepolia",     chainId: 421614,    rpc: "https://sepolia-rollup.arbitrum.io/rpc",                 usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d" },
+  { id: "op",   name: "Optimism Sepolia",  short: "OP",    color: "#FF0420", bridgeChain: "Optimism_Sepolia",     chainId: 11155420,  rpc: "https://sepolia.optimism.io",                            usdc: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7" },
+  { id: "poly", name: "Polygon Amoy",      short: "MATIC", color: "#8247E5", bridgeChain: "Polygon_Amoy_Testnet", chainId: 80002,     rpc: "https://rpc-amoy.polygon.technology",                    usdc: "0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582" },
+  { id: "avax", name: "Avalanche Fuji",    short: "AVAX",  color: "#E84142", bridgeChain: "Avalanche_Fuji",       chainId: 43113,     rpc: "https://api.avax-test.network/ext/bc/C/rpc",             usdc: "0x5425890298aed601595a70AB815c96711a31Bc65" },
+  { id: "uni",  name: "Unichain Sepolia",  short: "UNI",   color: "#FF007A", bridgeChain: "Unichain_Sepolia",     chainId: 1301,      rpc: "https://sepolia.unichain.org",                           usdc: "0x31d0220469e10c4E71834a79b1f276d740d3768F" },
 ] as const;
 type ChainId = (typeof CHAINS)[number]["id"];
 
@@ -41,7 +42,7 @@ const INITIAL_STEPS: StepResult[] = [
 
 // ──────────────────────────────────────────────────────────
 export default function BridgeCard() {
-  const { adapter, chainId: walletChainId, isConnected, switchToArc } = useWallet();
+  const { adapter, chainId: walletChainId, isConnected, switchToArc, address } = useWallet();
 
   const [fromChain, setFromChain] = useState<ChainId>("eth");
   const [toChain,   setToChain]   = useState<ChainId>("arc");
@@ -55,6 +56,18 @@ export default function BridgeCard() {
 
   const fromDef = CHAINS.find(c => c.id === fromChain)!;
   const toDef   = CHAINS.find(c => c.id === toChain)!;
+
+  // ── Per-chain USDC balances (refresh every 3s) ──────────
+  const { balance: fromBalance, loading: fromBalLoading } = useChainUsdcBalance({
+    rpc:           fromDef.rpc,
+    usdcAddress:   fromDef.usdc,
+    walletAddress: isConnected ? address : null,
+  });
+  const { balance: toBalance, loading: toBalLoading } = useChainUsdcBalance({
+    rpc:           toDef.rpc,
+    usdcAddress:   toDef.usdc,
+    walletAddress: isConnected ? address : null,
+  });
 
   const canBridge  = fromChain !== toChain && !!amount && parseFloat(amount) > 0 && isConnected;
   const wrongChain = isConnected && walletChainId !== fromDef.chainId;
@@ -146,7 +159,18 @@ export default function BridgeCard() {
 
         {/* FROM */}
         <div className="rounded-card border border-ink-border2 bg-ink-surface2 p-4">
-          <div className="mb-3 font-mono text-[11px] text-muted">FROM</div>
+          <div className="mb-3 flex items-center justify-between">
+            <span className="font-mono text-[11px] text-muted">FROM</span>
+            {isConnected && (
+              <span className="font-mono text-[11px] text-muted">
+                {fromBalLoading && fromBalance === null ? (
+                  <span className="animate-pulse">...</span>
+                ) : fromBalance !== null ? (
+                  <span>Balance: <span className="text-cream-dim">{fromBalance} USDC</span></span>
+                ) : null}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <ChainPicker value={fromChain} exclude={toChain} open={fromOpen}
               onToggle={() => { setFromOpen(!fromOpen); setToOpen(false); }}
@@ -155,7 +179,20 @@ export default function BridgeCard() {
               placeholder="0.00" disabled={bridgeState === "running"}
               className="min-w-0 flex-1 bg-transparent font-mono text-2xl text-cream-white placeholder:text-ink-border2 focus:outline-none text-right disabled:opacity-50" />
           </div>
-          <div className="mt-1 text-right font-mono text-[11px] text-muted">USDC</div>
+          <div className="mt-1 flex items-center justify-between">
+            <span className="font-mono text-[11px] text-muted" />
+            <div className="flex items-center gap-2">
+              {isConnected && fromBalance !== null && (
+                <button
+                  onClick={() => setAmount(fromBalance.replace(/,/g, ""))}
+                  disabled={bridgeState === "running"}
+                  className="font-mono text-[10px] text-red-primary/70 hover:text-red-primary transition-colors disabled:opacity-40">
+                  MAX
+                </button>
+              )}
+              <span className="font-mono text-[11px] text-muted">USDC</span>
+            </div>
+          </div>
         </div>
 
         {/* Flip */}
@@ -170,7 +207,18 @@ export default function BridgeCard() {
 
         {/* TO */}
         <div className="rounded-card border border-ink-border2 bg-ink-surface2 p-4">
-          <div className="mb-3 font-mono text-[11px] text-muted">TO</div>
+          <div className="mb-3 flex items-center justify-between">
+            <span className="font-mono text-[11px] text-muted">TO</span>
+            {isConnected && (
+              <span className="font-mono text-[11px] text-muted">
+                {toBalLoading && toBalance === null ? (
+                  <span className="animate-pulse">...</span>
+                ) : toBalance !== null ? (
+                  <span>Balance: <span className="text-cream-dim">{toBalance} USDC</span></span>
+                ) : null}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <ChainPicker value={toChain} exclude={fromChain} open={toOpen}
               onToggle={() => { setToOpen(!toOpen); setFromOpen(false); }}
