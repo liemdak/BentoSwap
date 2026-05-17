@@ -128,6 +128,7 @@ function WalletIcon({ wallet }: { wallet: WalletDef }) {
 
   if (wallet.iconImg && !failed) {
     return (
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={wallet.iconImg}
         alt={wallet.name}

@@ -83,11 +83,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const prov = provider as Record<string, (...args: unknown[]) => unknown>;
 
       // Request accounts
-      const accounts: string[] = await prov.request({ method: "eth_requestAccounts" });
+      const accounts = (await prov.request({ method: "eth_requestAccounts" })) as string[];
       if (!accounts.length) throw new Error("No accounts returned");
 
       // Get current chainId
-      const chainHex: string = await prov.request({ method: "eth_chainId" });
+      const chainHex = (await prov.request({ method: "eth_chainId" })) as string;
       const currentChain = parseInt(chainHex, 16);
 
       // Build viem adapter

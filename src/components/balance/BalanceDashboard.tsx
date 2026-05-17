@@ -30,6 +30,7 @@ function ChainIcon({ id, size = 24 }: { id: string; size?: number }) {
   const src = CHAIN_IMG[id];
   if (src) {
     return (
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={src}
         alt={id}
