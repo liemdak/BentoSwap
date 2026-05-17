@@ -351,10 +351,6 @@ export default function SwapCard() {
 
 // ── Sub-components ────────────────────────────────────────
 
-function TokenDot({ token }: { token: TokenSymbol }) {
-  return <TokenIcon symbol={token} size={20} />;
-}
-
 function TokenIcon({ symbol, size = 20 }: { symbol: TokenSymbol; size?: number }) {
   if (symbol === "USDC") return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none">

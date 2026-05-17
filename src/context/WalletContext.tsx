@@ -50,7 +50,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   // ── Switch / add Arc Testnet ───────────────────────────
   const switchToArc = useCallback(async () => {
-    const provider = rawProvider as Record<string, Function> | null;
+    const provider = rawProvider as Record<string, (...args: unknown[]) => unknown> | null;
     if (!provider?.request) return;
     try {
       await provider.request({
@@ -80,7 +80,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     setIsConnecting(true);
     try {
-      const prov = provider as Record<string, Function>;
+      const prov = provider as Record<string, (...args: unknown[]) => unknown>;
 
       // Request accounts
       const accounts: string[] = await prov.request({ method: "eth_requestAccounts" });
@@ -140,7 +140,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   // ── Listen for account / chain changes ────────────────
   useEffect(() => {
     if (!rawProvider) return;
-    const prov = rawProvider as Record<string, Function>;
+    const prov = rawProvider as Record<string, (...args: unknown[]) => unknown>;
 
     const onAccountsChanged = (accounts: string[]) => {
       if (!accounts.length) disconnect();
