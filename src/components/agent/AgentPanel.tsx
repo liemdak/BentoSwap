@@ -100,10 +100,37 @@ function useCountdowns(tasks: AgentTask[]) {
 
 // ──────────────────────────────────────────────────────────
 export default function AgentPanel() {
+  const { adapter: userAdapter, isConnected } = useWallet();
+
   const [tasks,        setTasks]        = useState<AgentTask[]>([]);
   const [modal,        setModal]        = useState<AgentMode | null>(null);
   const [deploying,    setDeploying]    = useState(false);
   const [deployedInfo, setDeployedInfo] = useState<{ address: string; label: string } | null>(null);
+
+  // Fund agent wallet from inside success screen
+  const [fundAmt,   setFundAmt]   = useState("");
+  const [fundState, setFundState] = useState<"idle"|"loading"|"done"|"error">("idle");
+  const [fundErr,   setFundErr]   = useState("");
+  const [fundTx,    setFundTx]    = useState("");
+
+  const handleModalFund = async () => {
+    if (!userAdapter || !fundAmt || !deployedInfo) return;
+    setFundState("loading"); setFundErr("");
+    try {
+      const result = await kit.send({
+        from:   { adapter: userAdapter, chain: "Arc_Testnet" },
+        to:     deployedInfo.address,
+        amount: fundAmt,
+        token:  "USDC",
+      });
+      setFundTx(result.txHash ?? "");
+      setFundState("done");
+      setFundAmt("");
+    } catch (e: unknown) {
+      setFundErr((e as Error).message ?? "Fund failed");
+      setFundState("error");
+    }
+  };
 
   // ── Load tasks from localStorage on mount ───────────────
   useEffect(() => {
@@ -431,26 +458,60 @@ export default function AgentPanel() {
                         {deployedInfo.address}
                       </p>
 
-                      {/* Fund reminder */}
-                      <div className="rounded border border-yellow-500/30 bg-yellow-500/5 px-3 py-2.5">
-                        <p className="font-mono text-[11px] text-yellow-400 leading-relaxed">
-                          ⚠ Fund this wallet with USDC before the agent runs
-                        </p>
-                        <p className="mt-1 font-mono text-[10px] text-muted">
-                          Send USDC to the address above. The agent will use it to execute transactions on your behalf.
-                        </p>
+                      {/* ── Fund widget ── */}
+                      <div className="rounded border border-yellow-500/30 bg-yellow-500/5 p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[10px] text-yellow-400">⚡ Fund Agent Wallet</span>
+                          <span className="font-mono text-[9px] text-muted">(required before first run)</span>
+                        </div>
+
+                        {fundState === "done" ? (
+                          <div className="space-y-1">
+                            <p className="font-mono text-[10px] text-success">✓ Funded! Agent is ready to run.</p>
+                            {fundTx && (
+                              <a href={`https://testnet.arcscan.app/tx/${fundTx}`} target="_blank" rel="noopener noreferrer"
+                                className="block font-mono text-[9px] text-success/70 hover:text-success">
+                                {fundTx.slice(0,10)}...{fundTx.slice(-6)} ↗
+                              </a>
+                            )}
+                          </div>
+                        ) : isConnected ? (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                value={fundAmt}
+                                onChange={e => setFundAmt(e.target.value)}
+                                placeholder="Amount to fund"
+                                disabled={fundState === "loading"}
+                                className="min-w-0 flex-1 rounded border border-yellow-500/30 bg-black px-3 py-2 font-mono text-sm text-white placeholder:text-muted focus:outline-none disabled:opacity-50"
+                              />
+                              <span className="font-mono text-xs text-muted flex-shrink-0">USDC</span>
+                              <button
+                                onClick={handleModalFund}
+                                disabled={fundState === "loading" || !fundAmt || parseFloat(fundAmt) <= 0}
+                                className="flex-shrink-0 rounded-lg border border-yellow-500/50 bg-yellow-500/15 px-4 py-2 font-mono text-xs text-yellow-400 transition-colors hover:bg-yellow-500/25 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {fundState === "loading" ? "Sending…" : "Send"}
+                              </button>
+                            </div>
+                            {fundErr && <p className="font-mono text-[10px] text-red-primary">{fundErr}</p>}
+                            <p className="font-mono text-[9px] text-muted">
+                              Your wallet → agent wallet · you can also top up later from the task list
+                            </p>
+                          </>
+                        ) : (
+                          <p className="font-mono text-[10px] text-muted">Connect wallet to fund</p>
+                        )}
                       </div>
 
-                      {/* What is this wallet? */}
+                      {/* Notes */}
                       <div className="space-y-1 border-t border-ink-border pt-2">
                         <p className="font-mono text-[10px] text-muted">
-                          · This is a <span className="text-cream-dim">Circle Developer Controlled Wallet</span> — unique to this task
+                          · Circle Developer Controlled Wallet — 1 unique wallet per task
                         </p>
                         <p className="font-mono text-[10px] text-muted">
-                          · Transactions are signed by Circle infrastructure — gasless via Paymaster
-                        </p>
-                        <p className="font-mono text-[10px] text-muted">
-                          · You can cancel this task anytime from the dashboard
+                          · Gasless via Circle Paymaster · cancel anytime
                         </p>
                       </div>
                     </div>
@@ -458,9 +519,13 @@ export default function AgentPanel() {
 
                   <button
                     onClick={closeModal}
-                    className="w-full rounded-lg bg-success py-3 font-body text-sm font-medium text-white transition-colors hover:opacity-90"
+                    className={`w-full rounded-lg py-3 font-body text-sm font-medium text-white transition-colors hover:opacity-90 ${
+                      fundState === "done"
+                        ? "bg-success"
+                        : "bg-ink-surface2 border border-ink-border2 hover:border-cream-dim/30 text-cream-dim"
+                    }`}
                   >
-                    Done
+                    {fundState === "done" ? "✓ Done — Agent is active" : "Skip, fund later"}
                   </button>
                 </div>
               ) : (
@@ -862,17 +927,15 @@ function AgentWalletRow({ address }: { address: string }) {
     if (!adapter || !fundAmt || parseFloat(fundAmt) <= 0) return;
     setFundState("loading"); setFundErr("");
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await (kit as any).send({
-        from:        { adapter },
-        to:          [{ address, amount: fundAmt, token: "USDC" }],
-        networkType: "testnet",
+      const result = await kit.send({
+        from:   { adapter, chain: "Arc_Testnet" },
+        to:     address,
+        amount: fundAmt,
+        token:  "USDC",
       });
-      const hash = result?.txHash ?? result?.results?.[0]?.txHash ?? "";
-      setFundTxHash(hash);
+      setFundTxHash(result.txHash ?? "");
       setFundState("done");
       setFundAmt("");
-      // Refresh balance after 3s
       setTimeout(refresh, 3000);
     } catch (e: unknown) {
       setFundErr((e as Error).message ?? "Fund failed");
