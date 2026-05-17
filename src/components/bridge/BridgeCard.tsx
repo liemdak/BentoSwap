@@ -44,8 +44,8 @@ const INITIAL_STEPS: StepResult[] = [
 export default function BridgeCard() {
   const { adapter, chainId: walletChainId, isConnected, switchToArc, address } = useWallet();
 
-  const [fromChain, setFromChain] = useState<ChainId>("eth");
-  const [toChain,   setToChain]   = useState<ChainId>("arc");
+  const [fromChain, setFromChain] = useState<ChainId>("arc");
+  const [toChain,   setToChain]   = useState<ChainId>("eth");
   const [amount,    setAmount]    = useState("");
   const [fromOpen,  setFromOpen]  = useState(false);
   const [toOpen,    setToOpen]    = useState(false);
@@ -395,6 +395,38 @@ export default function BridgeCard() {
   );
 }
 
+// ── Chain icon map ──────────────────────────────────────────
+const CHAIN_ICON: Record<string, string> = {
+  arc:  "/chains/Arc%20Testnet.png",
+  eth:  "/chains/Ethereum%20Sepolia.png",
+  base: "/chains/Base%20Sepolia.png",
+  arb:  "/chains/Arbitrium%20Sepolia.png",
+  op:   "/chains/OP%20Sepolia.png",
+  poly: "/chains/Polygon%20Amoy.png",
+  avax: "/chains/Avalanche%20Fuji.png",
+  uni:  "/chains/Unichain%20Sepolia.jpg",
+};
+
+function ChainImg({ id, color, size = 22 }: { id: string; color: string; size?: number }) {
+  const src = CHAIN_ICON[id];
+  return src ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt={id} width={size} height={size}
+      className="rounded-full object-cover flex-shrink-0"
+      style={{ width: size, height: size }}
+      onError={e => {
+        const t = e.currentTarget as HTMLImageElement;
+        t.style.display = "none";
+        const s = t.nextElementSibling as HTMLElement | null;
+        if (s) s.style.display = "inline-block";
+      }}
+    />
+  ) : (
+    <span className="rounded-full flex-shrink-0 inline-block"
+      style={{ width: size, height: size, backgroundColor: color }} />
+  );
+}
+
 // ── Sub-components ─────────────────────────────────────────
 function ChainPicker({ value, exclude, open, onToggle, onSelect }: {
   value: ChainId; exclude: ChainId; open: boolean;
@@ -404,21 +436,21 @@ function ChainPicker({ value, exclude, open, onToggle, onSelect }: {
   return (
     <div className="relative flex-shrink-0">
       <button onClick={onToggle}
-        className="flex items-center gap-2 rounded-lg border border-ink-border2 bg-black px-3 py-2 font-mono text-sm font-medium text-white hover:border-red-primary/40 transition-colors">
-        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: chain.color }} />
-        {chain.short}
+        className="flex items-center gap-2.5 rounded-xl border border-ink-border2 bg-black px-3.5 py-2.5 font-mono text-sm font-medium text-white hover:border-red-primary/40 transition-colors">
+        <ChainImg id={chain.id} color={chain.color} size={22} />
+        <span>{chain.short}</span>
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
           <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-52 rounded-card border border-ink-border2 bg-ink-surface shadow-xl">
+        <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-card border border-ink-border2 bg-ink-surface shadow-xl">
           {CHAINS.filter(c => c.id !== exclude).map(c => (
             <button key={c.id} onClick={() => onSelect(c.id)}
-              className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left font-mono text-sm transition-colors hover:bg-ink-surface2 ${
+              className={`flex w-full items-center gap-3 px-3.5 py-3 text-left font-mono text-sm transition-colors hover:bg-ink-surface2 ${
                 c.id === value ? "text-red-primary" : "text-cream-white"
               }`}>
-              <span className="h-3 w-3 rounded-full" style={{ backgroundColor: c.color }} />
+              <ChainImg id={c.id} color={c.color} size={20} />
               {c.name}
             </button>
           ))}
