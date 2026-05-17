@@ -7,7 +7,7 @@ export default function BridgePage() {
         <div className="mb-2 font-mono text-xs tracking-widest text-red-primary">{"{ BRIDGE }"}</div>
         <h1 className="font-mono text-4xl font-bold uppercase tracking-tight text-outline sm:text-5xl">Bridge</h1>
         <p className="mt-2 font-mono text-sm text-page-muted sm:text-base">
-          Cross-chain USDC via CCTP v2 · Burn → Attestation → Mint · Free
+          Cross-chain USDC via CCTP v2 · Burn → Attestation → Mint
         </p>
       </div>
       <div className="flex justify-center">
