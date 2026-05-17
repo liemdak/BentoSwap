@@ -7,14 +7,14 @@ import { useChainUsdcBalance } from "@/hooks/useChainUsdcBalance";
 
 // ── Chain definitions ──────────────────────────────────────
 const CHAINS = [
-  { id: "arc",  name: "Arc Testnet",       short: "Arc",   color: "#C8102E", bridgeChain: "Arc_Testnet",          chainId: 5042002,   rpc: "https://rpc.testnet.arc.network",                        usdc: "0x3600000000000000000000000000000000000000" },
-  { id: "eth",  name: "Ethereum Sepolia",  short: "ETH",   color: "#627EEA", bridgeChain: "Ethereum_Sepolia",     chainId: 11155111,  rpc: "https://rpc.sepolia.org",                                usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" },
-  { id: "base", name: "Base Sepolia",      short: "Base",  color: "#0052FF", bridgeChain: "Base_Sepolia",         chainId: 84532,     rpc: "https://sepolia.base.org",                               usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e" },
-  { id: "arb",  name: "Arbitrum Sepolia",  short: "ARB",   color: "#12AAFF", bridgeChain: "Arbitrum_Sepolia",     chainId: 421614,    rpc: "https://sepolia-rollup.arbitrum.io/rpc",                 usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d" },
-  { id: "op",   name: "Optimism Sepolia",  short: "OP",    color: "#FF0420", bridgeChain: "Optimism_Sepolia",     chainId: 11155420,  rpc: "https://sepolia.optimism.io",                            usdc: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7" },
-  { id: "poly", name: "Polygon Amoy",      short: "MATIC", color: "#8247E5", bridgeChain: "Polygon_Amoy_Testnet", chainId: 80002,     rpc: "https://rpc-amoy.polygon.technology",                    usdc: "0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582" },
-  { id: "avax", name: "Avalanche Fuji",    short: "AVAX",  color: "#E84142", bridgeChain: "Avalanche_Fuji",       chainId: 43113,     rpc: "https://api.avax-test.network/ext/bc/C/rpc",             usdc: "0x5425890298aed601595a70AB815c96711a31Bc65" },
-  { id: "uni",  name: "Unichain Sepolia",  short: "UNI",   color: "#FF007A", bridgeChain: "Unichain_Sepolia",     chainId: 1301,      rpc: "https://sepolia.unichain.org",                           usdc: "0x31d0220469e10c4E71834a79b1f276d740d3768F" },
+  { id: "arc",  name: "Arc Testnet",       short: "Arc",   color: "#C8102E", bridgeChain: "Arc_Testnet",          chainId: 5042002,   rpc: "https://rpc.testnet.arc.network",                        usdc: "0x3600000000000000000000000000000000000000", explorer: "https://testnet.arcscan.app/tx/{hash}" },
+  { id: "eth",  name: "Ethereum Sepolia",  short: "ETH",   color: "#627EEA", bridgeChain: "Ethereum_Sepolia",     chainId: 11155111,  rpc: "https://rpc.sepolia.org",                                usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", explorer: "https://sepolia.etherscan.io/tx/{hash}" },
+  { id: "base", name: "Base Sepolia",      short: "Base",  color: "#0052FF", bridgeChain: "Base_Sepolia",         chainId: 84532,     rpc: "https://sepolia.base.org",                               usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", explorer: "https://sepolia.basescan.org/tx/{hash}" },
+  { id: "arb",  name: "Arbitrum Sepolia",  short: "ARB",   color: "#12AAFF", bridgeChain: "Arbitrum_Sepolia",     chainId: 421614,    rpc: "https://sepolia-rollup.arbitrum.io/rpc",                 usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", explorer: "https://sepolia.arbiscan.io/tx/{hash}" },
+  { id: "op",   name: "Optimism Sepolia",  short: "OP",    color: "#FF0420", bridgeChain: "Optimism_Sepolia",     chainId: 11155420,  rpc: "https://sepolia.optimism.io",                            usdc: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7", explorer: "https://sepolia-optimistic.etherscan.io/tx/{hash}" },
+  { id: "poly", name: "Polygon Amoy",      short: "MATIC", color: "#8247E5", bridgeChain: "Polygon_Amoy_Testnet", chainId: 80002,     rpc: "https://rpc-amoy.polygon.technology",                    usdc: "0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582", explorer: "https://amoy.polygonscan.com/tx/{hash}" },
+  { id: "avax", name: "Avalanche Fuji",    short: "AVAX",  color: "#E84142", bridgeChain: "Avalanche_Fuji",       chainId: 43113,     rpc: "https://api.avax-test.network/ext/bc/C/rpc",             usdc: "0x5425890298aed601595a70AB815c96711a31Bc65", explorer: "https://subnets-test.avax.network/c-chain/tx/{hash}" },
+  { id: "uni",  name: "Unichain Sepolia",  short: "UNI",   color: "#FF007A", bridgeChain: "Unichain_Sepolia",     chainId: 1301,      rpc: "https://sepolia.unichain.org",                           usdc: "0x31d0220469e10c4E71834a79b1f276d740d3768F", explorer: "https://unichain-sepolia.blockscout.com/tx/{hash}" },
 ] as const;
 type ChainId = (typeof CHAINS)[number]["id"];
 
@@ -106,6 +106,26 @@ export default function BridgeCard() {
     }
   };
 
+  // ── Human-readable step name ─────────────────────────────
+  const formatStepName = (raw: string): string => {
+    const map: Record<string, string> = {
+      approve:          "Approve",
+      burn:             "Burn",
+      fetchAttestation: "Attestation",
+      reAttest:         "Re-Attestation",
+      mint:             "Mint",
+    };
+    return map[raw] ?? raw.charAt(0).toUpperCase() + raw.slice(1);
+  };
+
+  // ── Build correct explorer URL per step ──────────────────
+  // Burn/Approve happen on FROM chain; Mint happens on TO chain
+  const stepExplorerUrl = (name: string, txHash: string): string => {
+    const isMint = name === "mint";
+    const chainDef = isMint ? toDef : fromDef;
+    return chainDef.explorer.replace("{hash}", txHash);
+  };
+
   // ── Real kit.bridge() ────────────────────────────────────
   const handleBridge = async () => {
     if (!adapter || !canBridge) return;
@@ -114,24 +134,25 @@ export default function BridgeCard() {
     setSteps(INITIAL_STEPS.map((s, i) => ({ ...s, state: i === 0 ? "active" : "pending" })));
 
     try {
-      // Animate step 1 active (Burn)
       const result = await kit.bridge({
         from: { adapter, chain: fromDef.bridgeChain },
         to:   { adapter, chain: toDef.bridgeChain },
         amount,
       });
 
-      // Map SDK steps to UI steps
-      const sdkSteps = (result as unknown as { steps?: { name: string; state: string; txHash?: string; explorerUrl?: string }[] }).steps ?? [];
-      const mapped: StepResult[] = INITIAL_STEPS.map((init, i) => {
-        const sdk = sdkSteps[i];
-        return {
-          name:        init.name,
-          state:       sdk?.state === "success" ? "done" : sdk?.state === "error" ? "error" : "done",
-          txHash:      sdk?.txHash,
-          explorerUrl: sdk?.explorerUrl,
-        };
-      });
+      // Use REAL SDK steps — filter noop, map to UI shape
+      const sdkSteps = (result as { steps?: { name: string; state: string; txHash?: string; explorerUrl?: string }[] }).steps ?? [];
+      const visible = sdkSteps.filter(s => s.state !== "noop");
+
+      const mapped: StepResult[] = visible.map(sdk => ({
+        name:  formatStepName(sdk.name),
+        state: sdk.state === "success" ? "done" : sdk.state === "error" ? "error" : "done",
+        txHash:      sdk.txHash,
+        // Prefer SDK-provided URL; fall back to chain-correct explorer
+        explorerUrl: sdk.explorerUrl
+          ?? (sdk.txHash ? stepExplorerUrl(sdk.name, sdk.txHash) : undefined),
+      }));
+
       setSteps(mapped.length > 0 ? mapped : INITIAL_STEPS.map(s => ({ ...s, state: "done" as const })));
       setBridgeState("done");
 
@@ -256,8 +277,15 @@ export default function BridgeCard() {
         {/* Bridge progress */}
         {(bridgeState === "running" || bridgeState === "done" || bridgeState === "error") && (
           <div className="mt-4 rounded-card border border-ink-border bg-black p-4">
-            <div className="mb-3 font-mono text-[11px] text-muted">
-              {bridgeState === "done" ? "Bridge complete ✓" : bridgeState === "error" ? "Bridge failed" : "Bridge in progress..."}
+            <div className="mb-3 flex items-center justify-between">
+              <span className="font-mono text-[11px] text-muted">
+                {bridgeState === "done" ? "Bridge complete ✓" : bridgeState === "error" ? "Bridge failed" : "Bridge in progress..."}
+              </span>
+              {bridgeState === "done" && (
+                <span className="font-mono text-[10px] text-muted">
+                  {fromDef.short} → {toDef.short}
+                </span>
+              )}
             </div>
             <div className="space-y-3">
               {steps.map((step, i) => (
@@ -290,12 +318,17 @@ export default function BridgeCard() {
                       step.state === "active" ? "text-cream-white" :
                       step.state === "error" ? "text-red-primary" : "text-muted"
                     }`}>{step.name}</div>
-                    {step.txHash && (
-                      <a href={step.explorerUrl ?? `https://testnet.arcscan.app/tx/${step.txHash}`}
+                    {step.txHash && step.explorerUrl && (
+                      <a href={step.explorerUrl}
                         target="_blank" rel="noopener noreferrer"
                         className="font-mono text-[10px] text-success/70 hover:text-success transition-colors">
                         {step.txHash.slice(0, 10)}...{step.txHash.slice(-6)} ↗
                       </a>
+                    )}
+                    {step.txHash && !step.explorerUrl && (
+                      <span className="font-mono text-[10px] text-muted select-all">
+                        {step.txHash.slice(0, 10)}...{step.txHash.slice(-6)}
+                      </span>
                     )}
                   </div>
                 </div>
