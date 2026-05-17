@@ -312,6 +312,24 @@ export default function AgentPanel() {
                     )}
                   </div>
                   <div className="mt-0.5 truncate font-mono text-[11px] text-muted">{task.sublabel}</div>
+
+                  {/* Agent Wallet address — user needs to fund this */}
+                  {task.walletAddress && (
+                    <div className="mt-1.5 flex items-center gap-1.5 rounded border border-yellow-500/30 bg-yellow-500/5 px-2 py-1">
+                      <span className="font-mono text-[9px] text-yellow-400">FUND →</span>
+                      <span className="flex-1 truncate font-mono text-[10px] text-yellow-300">
+                        {task.walletAddress}
+                      </span>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(task.walletAddress)}
+                        className="flex-shrink-0 font-mono text-[9px] text-yellow-400 hover:text-yellow-200 transition-colors"
+                        title="Copy agent wallet address"
+                      >
+                        copy
+                      </button>
+                    </div>
+                  )}
+
                   <div className="mt-0.5 flex items-center gap-2">
                     {task.status === "active" && task.nextRunAt && (
                       <span className="font-mono text-[10px] text-red-primary">
