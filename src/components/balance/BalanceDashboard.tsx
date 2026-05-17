@@ -343,7 +343,18 @@ export default function BalanceDashboard() {
           <div className="p-4 sm:p-5">
             <div className="mb-3 flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/chains/circle.png" alt="Circle" width={20} height={20} className="rounded-full" />
+              <img
+                src="/chains/circle.png"
+                alt="Circle"
+                width={24}
+                height={24}
+                className="rounded-full object-cover flex-shrink-0 bg-white"
+                style={{ width: 24, height: 24 }}
+                onError={(e) => {
+                  const t = e.currentTarget as HTMLImageElement;
+                  t.style.display = "none";
+                }}
+              />
               <span className="font-mono text-[10px] tracking-widest text-muted">CIRCLE GATEWAY</span>
             </div>
             <div className="font-mono text-3xl font-bold text-cream-white sm:text-4xl">

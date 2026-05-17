@@ -21,6 +21,7 @@ export default function Navbar() {
   const [modalOpen, setModalOpen] = useState(false);
 
   const { address, isConnected, isConnecting, chainId, disconnect, switchToArc } = useWallet();
+  const [copied, setCopied] = useState(false);
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
@@ -30,6 +31,14 @@ export default function Navbar() {
     : null;
 
   const onArc = chainId === ARC_CHAIN_ID;
+
+  const copyAddress = () => {
+    if (!address) return;
+    navigator.clipboard.writeText(address).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   return (
     <>
@@ -91,18 +100,40 @@ export default function Navbar() {
             {/* Wallet button */}
             {isConnected ? (
               <div className="relative group">
-                <button className="flex items-center gap-2 rounded-lg border border-success/50 bg-success/10 px-3 py-2 font-mono text-xs text-success transition-colors hover:bg-success/20">
+                <button
+                  onClick={copyAddress}
+                  title="Click to copy address"
+                  className="flex items-center gap-2 rounded-lg border border-success/50 bg-success/10 px-3 py-2 font-mono text-xs text-success transition-all hover:bg-success/20 active:scale-95"
+                >
                   <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                  {shortAddress}
+                  {copied ? "Copied!" : shortAddress}
+                  {/* Copy icon */}
+                  {!copied && (
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-50">
+                      <rect x="9" y="9" width="13" height="13" rx="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                  )}
                 </button>
-                {/* Disconnect tooltip */}
-                <div className="absolute right-0 top-full mt-1 hidden rounded-card border border-ink-border bg-ink-surface px-3 py-2 shadow-card group-hover:block">
-                  <button
-                    onClick={disconnect}
-                    className="font-mono text-xs text-red-primary hover:underline whitespace-nowrap"
-                  >
-                    Disconnect
-                  </button>
+                {/* Dropdown: full address + disconnect */}
+                <div className="absolute right-0 top-full mt-1.5 hidden min-w-[200px] rounded-card border border-ink-border bg-ink-surface p-3 shadow-card group-hover:block z-50">
+                  <p className="mb-2 break-all font-mono text-[10px] text-cream-dim leading-relaxed">
+                    {address}
+                  </p>
+                  <div className="border-t border-ink-border pt-2 flex gap-2">
+                    <button
+                      onClick={copyAddress}
+                      className="flex-1 rounded border border-ink-border2 py-1.5 font-mono text-[10px] text-muted hover:text-cream-white hover:border-cream-dim transition-colors"
+                    >
+                      {copied ? "✓ Copied" : "Copy"}
+                    </button>
+                    <button
+                      onClick={disconnect}
+                      className="flex-1 rounded border border-red-primary/30 py-1.5 font-mono text-[10px] text-red-primary hover:bg-red-bg transition-colors"
+                    >
+                      Disconnect
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -168,7 +199,18 @@ export default function Navbar() {
 
               {isConnected ? (
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-page-muted">{shortAddress}</span>
+                  <button
+                    onClick={copyAddress}
+                    className="flex items-center gap-1.5 font-mono text-xs text-success"
+                  >
+                    {copied ? "✓ Copied!" : shortAddress}
+                    {!copied && (
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+                        <rect x="9" y="9" width="13" height="13" rx="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                      </svg>
+                    )}
+                  </button>
                   <button
                     onClick={disconnect}
                     className="rounded border border-red-primary/40 px-3 py-1.5 font-mono text-xs text-red-primary"
