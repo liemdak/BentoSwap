@@ -55,6 +55,20 @@ const config: Config = {
         card:  "0 4px 24px rgba(22,18,14,0.18), 0 1px 4px rgba(22,18,14,0.10)",
         "card-hover": "0 8px 32px rgba(22,18,14,0.22), 0 2px 8px rgba(22,18,14,0.12)",
       },
+      keyframes: {
+        fadeIn: {
+          "0%":   { opacity: "0", transform: "translateY(8px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        shimmer: {
+          "0%":   { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+      },
+      animation: {
+        fadeIn:  "fadeIn 0.35s ease-out",
+        shimmer: "shimmer 1.5s infinite linear",
+      },
     },
   },
   plugins: [],
