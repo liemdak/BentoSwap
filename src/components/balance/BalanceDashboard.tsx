@@ -4,17 +4,18 @@ import { useState } from "react";
 import { useWallet } from "@/context/WalletContext";
 import { ARC_CHAIN_ID } from "@/lib/chains";
 import { useChainUsdcBalance } from "@/hooks/useChainUsdcBalance";
+import { kit } from "@/lib/kit";
 
 // ── Chain config ────────────────────────────────────────────
 const CHAINS = [
-  { id: "arc",  name: "Arc Testnet",       short: "Arc",   color: "#C8102E", rpc: "https://rpc.testnet.arc.network",                        usdc: "0x3600000000000000000000000000000000000000" },
-  { id: "eth",  name: "Eth Sepolia",       short: "ETH",   color: "#627EEA", rpc: "https://rpc.sepolia.org",                                usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" },
-  { id: "base", name: "Base Sepolia",      short: "Base",  color: "#0052FF", rpc: "https://sepolia.base.org",                               usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e" },
-  { id: "arb",  name: "Arb Sepolia",       short: "ARB",   color: "#12AAFF", rpc: "https://sepolia-rollup.arbitrum.io/rpc",                 usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d" },
-  { id: "op",   name: "OP Sepolia",        short: "OP",    color: "#FF0420", rpc: "https://sepolia.optimism.io",                            usdc: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7" },
-  { id: "poly", name: "Polygon Amoy",      short: "MATIC", color: "#8247E5", rpc: "https://rpc-amoy.polygon.technology",                    usdc: "0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582" },
-  { id: "avax", name: "Avalanche Fuji",    short: "AVAX",  color: "#E84142", rpc: "https://api.avax-test.network/ext/bc/C/rpc",             usdc: "0x5425890298aed601595a70AB815c96711a31Bc65" },
-  { id: "uni",  name: "Unichain Sepolia",  short: "UNI",   color: "#FF007A", rpc: "https://sepolia.unichain.org",                           usdc: "0x31d0220469e10c4E71834a79b1f276d740d3768F" },
+  { id: "arc",  name: "Arc Testnet",       short: "Arc",   color: "#C8102E", rpc: "https://rpc.testnet.arc.network",                        usdc: "0x3600000000000000000000000000000000000000", gatewayChain: "Arc_Testnet" },
+  { id: "eth",  name: "Eth Sepolia",       short: "ETH",   color: "#627EEA", rpc: "https://rpc.sepolia.org",                                usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", gatewayChain: "Ethereum_Sepolia" },
+  { id: "base", name: "Base Sepolia",      short: "Base",  color: "#0052FF", rpc: "https://sepolia.base.org",                               usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", gatewayChain: "Base_Sepolia" },
+  { id: "arb",  name: "Arb Sepolia",       short: "ARB",   color: "#12AAFF", rpc: "https://sepolia-rollup.arbitrum.io/rpc",                 usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", gatewayChain: "Arbitrum_Sepolia" },
+  { id: "op",   name: "OP Sepolia",        short: "OP",    color: "#FF0420", rpc: "https://sepolia.optimism.io",                            usdc: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7", gatewayChain: "Optimism_Sepolia" },
+  { id: "poly", name: "Polygon Amoy",      short: "MATIC", color: "#8247E5", rpc: "https://rpc-amoy.polygon.technology",                    usdc: "0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582", gatewayChain: "Polygon_Amoy_Testnet" },
+  { id: "avax", name: "Avalanche Fuji",    short: "AVAX",  color: "#E84142", rpc: "https://api.avax-test.network/ext/bc/C/rpc",             usdc: "0x5425890298aed601595a70AB815c96711a31Bc65", gatewayChain: "Avalanche_Fuji" },
+  { id: "uni",  name: "Unichain Sepolia",  short: "UNI",   color: "#FF007A", rpc: "https://sepolia.unichain.org",                           usdc: "0x31d0220469e10c4E71834a79b1f276d740d3768F", gatewayChain: "Unichain_Sepolia" },
 ] as const;
 
 // ── Chain Icons ─────────────────────────────────────────────
@@ -52,12 +53,17 @@ function ChainIcon({ id, size = 24 }: { id: string; size?: number }) {
   );
 }
 
+type TxState = "idle" | "loading" | "done" | "error";
+interface TxResult { txHash?: string; explorerUrl?: string; }
+interface WithdrawPending { withdrawalBlock: number; txHash: string; explorerUrl?: string; }
+
 // ── ChainRow — reads real balance via RPC ──────────────────
 function ChainRow({
-  chain, walletAddress, depositChain, withdrawChain,
+  chain, adapter, walletAddress, depositChain, withdrawChain,
   onDeposit, onWithdraw,
 }: {
   chain: typeof CHAINS[number];
+  adapter: import("@circle-fin/adapter-viem-v2").ViemAdapter | null;
   walletAddress: string | null;
   depositChain: string | null;
   withdrawChain: string | null;
@@ -65,46 +71,102 @@ function ChainRow({
   onWithdraw: (id: string) => void;
 }) {
   const { balance, loading } = useChainUsdcBalance({
-    rpc:           chain.rpc,
-    usdcAddress:   chain.usdc,
-    walletAddress,
+    rpc: chain.rpc, usdcAddress: chain.usdc, walletAddress,
   });
 
   const [depositAmt,  setDepositAmt]  = useState("");
   const [withdrawAmt, setWithdrawAmt] = useState("");
+  const [depState,    setDepState]    = useState<TxState>("idle");
+  const [depResult,   setDepResult]   = useState<TxResult | null>(null);
+  const [depErr,      setDepErr]      = useState("");
+  const [withState,   setWithState]   = useState<TxState>("idle");
+  const [withResult,  setWithResult]  = useState<TxResult | null>(null);
+  const [withErr,     setWithErr]     = useState("");
+  const [withPending, setWithPending] = useState<WithdrawPending | null>(null);
 
-  const walletBal = balance !== null ? parseFloat(balance.replace(/,/g, "")) : null;
+  const walletBal  = balance !== null ? parseFloat(balance.replace(/,/g, "")) : null;
   const isDepositing  = depositChain  === chain.id;
   const isWithdrawing = withdrawChain === chain.id;
+
+  // ── Deposit ────────────────────────────────────────────────
+  const handleDeposit = async () => {
+    if (!adapter || !depositAmt || parseFloat(depositAmt) <= 0) return;
+    setDepState("loading"); setDepErr("");
+    try {
+      const result = await kit.unifiedBalance.deposit({
+        from: { adapter, chain: chain.gatewayChain },
+        amount: depositAmt,
+        token: "USDC",
+      });
+      setDepResult({ txHash: result.txHash, explorerUrl: (result as unknown as { explorerUrl?: string }).explorerUrl });
+      setDepState("done");
+      setDepositAmt("");
+    } catch (e: unknown) {
+      setDepErr((e as Error).message ?? "Deposit failed");
+      setDepState("error");
+    }
+  };
+
+  // ── Withdraw step 1: Initiate ──────────────────────────────
+  const handleInitiateWithdraw = async () => {
+    if (!adapter || !withdrawAmt || parseFloat(withdrawAmt) <= 0) return;
+    setWithState("loading"); setWithErr("");
+    try {
+      const result = await kit.unifiedBalance.initiateRemoveFund({
+        from: { adapter, chain: chain.gatewayChain },
+        amount: withdrawAmt,
+        token: "USDC",
+      });
+      setWithPending({ withdrawalBlock: result.withdrawalBlock, txHash: result.txHash, explorerUrl: result.explorerUrl });
+      setWithState("done");
+    } catch (e: unknown) {
+      setWithErr((e as Error).message ?? "Withdraw initiation failed");
+      setWithState("error");
+    }
+  };
+
+  // ── Withdraw step 2: Complete ──────────────────────────────
+  const handleCompleteWithdraw = async () => {
+    if (!adapter) return;
+    setWithState("loading"); setWithErr("");
+    try {
+      const result = await kit.unifiedBalance.removeFund({
+        from: { adapter, chain: chain.gatewayChain },
+        token: "USDC",
+      });
+      setWithResult({ txHash: result.txHash, explorerUrl: result.explorerUrl });
+      setWithPending(null);
+      setWithState("done");
+      setWithdrawAmt("");
+    } catch (e: unknown) {
+      setWithErr((e as Error).message ?? "Withdraw completion failed");
+      setWithState("error");
+    }
+  };
+
+  const resetDeposit  = () => { setDepState("idle");  setDepResult(null);  setDepErr("");  setDepositAmt(""); };
+  const resetWithdraw = () => { setWithState("idle"); setWithResult(null); setWithErr(""); setWithdrawAmt(""); setWithPending(null); };
 
   return (
     <div>
       <div className="rounded-card border border-ink-border2 bg-ink-surface2 p-3">
-
         {/* Desktop */}
         <div className="hidden items-center gap-3 sm:flex">
           <ChainIcon id={chain.id} size={24} />
           <span className="w-16 font-mono text-sm text-cream-white">{chain.short}</span>
-          <div className="flex flex-1 justify-end gap-6 font-mono text-sm">
-            {/* Wallet balance — real from RPC */}
-            <span className="w-20 text-right text-cream-dim">
-              {!walletAddress ? (
-                <span className="text-muted">—</span>
-              ) : loading && balance === null ? (
-                <span className="animate-pulse text-muted">…</span>
-              ) : walletBal !== null ? (
-                `$${walletBal.toFixed(2)}`
-              ) : (
-                <span className="text-muted">—</span>
-              )}
+          <div className="flex flex-1 justify-end font-mono text-sm">
+            <span className="w-24 text-right text-cream-dim">
+              {!walletAddress ? <span className="text-muted">—</span>
+                : loading && balance === null ? <span className="animate-pulse text-muted">…</span>
+                : walletBal !== null ? `$${walletBal.toFixed(2)}`
+                : <span className="text-muted">—</span>}
             </span>
           </div>
           <div className="flex gap-1.5">
-            <ActionBtn active={isDepositing}  color="red"   onClick={() => onDeposit(chain.id)}>Deposit</ActionBtn>
-            <ActionBtn active={isWithdrawing} color="green" onClick={() => onWithdraw(chain.id)}>Withdraw</ActionBtn>
+            <ActionBtn active={isDepositing}  color="red"   onClick={() => { onDeposit(chain.id); resetDeposit(); }}>Deposit</ActionBtn>
+            <ActionBtn active={isWithdrawing} color="green" onClick={() => { onWithdraw(chain.id); resetWithdraw(); }}>Withdraw</ActionBtn>
           </div>
         </div>
-
         {/* Mobile */}
         <div className="sm:hidden">
           <div className="mb-2 flex items-center gap-2">
@@ -115,59 +177,96 @@ function ChainRow({
             </span>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => onDeposit(chain.id)}
-              className={`flex-1 rounded border py-2.5 font-mono text-xs font-medium transition-colors ${
-                isDepositing ? "border-red-primary bg-red-bg text-red-primary" : "border-ink-border text-muted hover:text-cream-white"
-              }`}>Deposit</button>
-            <button onClick={() => onWithdraw(chain.id)}
-              className={`flex-1 rounded border py-2.5 font-mono text-xs font-medium transition-colors ${
-                isWithdrawing ? "border-success/60 bg-success/10 text-success" : "border-ink-border text-muted hover:text-cream-white"
-              }`}>Withdraw</button>
+            <button onClick={() => { onDeposit(chain.id); resetDeposit(); }}
+              className={`flex-1 rounded border py-2.5 font-mono text-xs font-medium transition-colors ${isDepositing ? "border-red-primary bg-red-bg text-red-primary" : "border-ink-border text-muted hover:text-cream-white"}`}>Deposit</button>
+            <button onClick={() => { onWithdraw(chain.id); resetWithdraw(); }}
+              className={`flex-1 rounded border py-2.5 font-mono text-xs font-medium transition-colors ${isWithdrawing ? "border-success/60 bg-success/10 text-success" : "border-ink-border text-muted hover:text-cream-white"}`}>Withdraw</button>
           </div>
         </div>
       </div>
 
-      {/* Deposit panel */}
+      {/* ── Deposit panel ── */}
       {isDepositing && (
         <div className="mx-2 rounded-b-card border border-t-0 border-red-primary/30 bg-red-bg p-3">
-          {!walletAddress ? (
+          {!adapter ? (
             <p className="font-mono text-xs text-muted">Connect your wallet to deposit</p>
-          ) : (
-            <div className="flex items-center gap-2">
-              <input type="number" value={depositAmt} onChange={e => setDepositAmt(e.target.value)}
-                placeholder="Amount"
-                className="min-w-0 flex-1 rounded border border-red-primary/30 bg-black px-3 py-2.5 font-mono text-sm text-cream-white placeholder:text-muted focus:outline-none" />
-              <span className="flex-shrink-0 font-mono text-xs text-muted">USDC</span>
-              <button className="flex-shrink-0 rounded-lg bg-red-primary px-4 py-2.5 font-mono text-xs text-white transition-colors hover:bg-red-dim">
-                Deposit
-              </button>
+          ) : depState === "done" && depResult ? (
+            <div className="space-y-1.5">
+              <p className="font-mono text-xs text-success">✓ Deposit successful</p>
+              {depResult.txHash && (
+                <a href={depResult.explorerUrl ?? "#"} target="_blank" rel="noopener noreferrer"
+                  className="block font-mono text-[10px] text-success/70 hover:text-success">
+                  {depResult.txHash.slice(0,10)}...{depResult.txHash.slice(-6)} ↗
+                </a>
+              )}
+              <button onClick={resetDeposit} className="mt-1 font-mono text-[10px] text-muted hover:text-cream-white">New deposit</button>
             </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <input type="number" value={depositAmt} onChange={e => setDepositAmt(e.target.value)}
+                  placeholder="Amount" disabled={depState === "loading"}
+                  className="min-w-0 flex-1 rounded border border-red-primary/30 bg-black px-3 py-2.5 font-mono text-sm text-cream-white placeholder:text-muted focus:outline-none disabled:opacity-50" />
+                <span className="flex-shrink-0 font-mono text-xs text-muted">USDC</span>
+                <button onClick={handleDeposit} disabled={depState === "loading" || !depositAmt || parseFloat(depositAmt) <= 0}
+                  className="flex-shrink-0 rounded-lg bg-red-primary px-4 py-2.5 font-mono text-xs text-white transition-colors hover:bg-red-dim disabled:cursor-not-allowed disabled:opacity-50">
+                  {depState === "loading" ? "…" : "Deposit"}
+                </button>
+              </div>
+              {depErr && <p className="mt-1 font-mono text-[10px] text-red-primary">{depErr}</p>}
+            </>
           )}
-          <p className="mt-2 font-mono text-[10px] text-muted">
-            Moves USDC from {chain.name} → Unified Balance
-          </p>
+          <p className="mt-2 font-mono text-[10px] text-muted">Moves USDC from {chain.name} → Unified Balance</p>
         </div>
       )}
 
-      {/* Withdraw panel */}
+      {/* ── Withdraw panel ── */}
       {isWithdrawing && (
         <div className="mx-2 rounded-b-card border border-t-0 border-success/30 bg-success/5 p-3">
-          {!walletAddress ? (
+          {!adapter ? (
             <p className="font-mono text-xs text-muted">Connect your wallet to withdraw</p>
-          ) : (
-            <div className="flex items-center gap-2">
-              <input type="number" value={withdrawAmt} onChange={e => setWithdrawAmt(e.target.value)}
-                placeholder="Amount"
-                className="min-w-0 flex-1 rounded border border-success/30 bg-black px-3 py-2.5 font-mono text-sm text-cream-white placeholder:text-muted focus:outline-none" />
-              <span className="flex-shrink-0 font-mono text-xs text-muted">USDC</span>
-              <button className="flex-shrink-0 rounded-lg bg-success px-4 py-2.5 font-mono text-xs text-white transition-opacity hover:opacity-90">
-                Withdraw
-              </button>
+          ) : withState === "done" && withResult ? (
+            <div className="space-y-1.5">
+              <p className="font-mono text-xs text-success">✓ Withdraw complete</p>
+              {withResult.txHash && (
+                <a href={withResult.explorerUrl ?? "#"} target="_blank" rel="noopener noreferrer"
+                  className="block font-mono text-[10px] text-success/70 hover:text-success">
+                  {withResult.txHash.slice(0,10)}...{withResult.txHash.slice(-6)} ↗
+                </a>
+              )}
+              <button onClick={resetWithdraw} className="mt-1 font-mono text-[10px] text-muted hover:text-cream-white">New withdrawal</button>
             </div>
+          ) : withPending ? (
+            <div className="space-y-2">
+              <p className="font-mono text-xs text-yellow-400">⏳ Step 1 done — waiting for block {withPending.withdrawalBlock}</p>
+              {withPending.txHash && (
+                <a href={withPending.explorerUrl ?? "#"} target="_blank" rel="noopener noreferrer"
+                  className="block font-mono text-[10px] text-success/70 hover:text-success">
+                  {withPending.txHash.slice(0,10)}...{withPending.txHash.slice(-6)} ↗
+                </a>
+              )}
+              <button onClick={handleCompleteWithdraw} disabled={withState === "loading"}
+                className="w-full rounded-lg bg-success px-4 py-2 font-mono text-xs text-white transition-opacity hover:opacity-90 disabled:opacity-50">
+                {withState === "loading" ? "Completing…" : "Complete Withdraw (Step 2)"}
+              </button>
+              {withErr && <p className="font-mono text-[10px] text-red-primary">{withErr}</p>}
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <input type="number" value={withdrawAmt} onChange={e => setWithdrawAmt(e.target.value)}
+                  placeholder="Amount" disabled={withState === "loading"}
+                  className="min-w-0 flex-1 rounded border border-success/30 bg-black px-3 py-2.5 font-mono text-sm text-cream-white placeholder:text-muted focus:outline-none disabled:opacity-50" />
+                <span className="flex-shrink-0 font-mono text-xs text-muted">USDC</span>
+                <button onClick={handleInitiateWithdraw} disabled={withState === "loading" || !withdrawAmt || parseFloat(withdrawAmt) <= 0}
+                  className="flex-shrink-0 rounded-lg bg-success px-4 py-2.5 font-mono text-xs text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                  {withState === "loading" ? "…" : "Initiate"}
+                </button>
+              </div>
+              {withErr && <p className="mt-1 font-mono text-[10px] text-red-primary">{withErr}</p>}
+              <p className="mt-2 font-mono text-[10px] text-muted">2-step: Initiate → wait → Complete. Pulls USDC → {chain.name}</p>
+            </>
           )}
-          <p className="mt-2 font-mono text-[10px] text-muted">
-            Pulls USDC from Unified Balance → {chain.name}
-          </p>
         </div>
       )}
     </div>
@@ -176,7 +275,7 @@ function ChainRow({
 
 // ── Main Dashboard ─────────────────────────────────────────
 export default function BalanceDashboard() {
-  const { address, isConnected, chainId, switchToArc } = useWallet();
+  const { address, adapter, isConnected, chainId, switchToArc } = useWallet();
   const onArc = chainId === ARC_CHAIN_ID;
 
   const [depositChain,  setDepositChain]  = useState<string | null>(null);
@@ -277,6 +376,7 @@ export default function BalanceDashboard() {
               <ChainRow
                 key={chain.id}
                 chain={chain}
+                adapter={adapter}
                 walletAddress={address}
                 depositChain={depositChain}
                 withdrawChain={withdrawChain}
