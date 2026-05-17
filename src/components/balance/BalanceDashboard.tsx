@@ -95,15 +95,20 @@ export default function BalanceDashboard() {
   // Real Arc wallet balance (live from RPC)
   const arcWallet = parseFloat(arcWalletRaw) || 0;
 
-  // Arc row uses real wallet data; gateway available/pending shown as 0 until Circle Gateway API is wired
+  // Arc row uses real wallet data; other chains show mock data only when connected
   const arcChain: ChainBalance = {
     id: "arc", name: "Arc Testnet", short: "Arc", color: "#C8102E",
     available: isConnected ? arcWallet : 0,
     pending:   0,
-    wallet:    arcWallet,
+    wallet:    isConnected ? arcWallet : 0,
   };
 
-  const allChains = [arcChain, ...MOCK_CHAINS];
+  // Show mock data for other chains only when wallet is connected
+  const visibleMockChains = MOCK_CHAINS.map((c) =>
+    isConnected ? c : { ...c, available: 0, pending: 0, wallet: 0 }
+  );
+
+  const allChains = [arcChain, ...visibleMockChains];
   const totalUnified = allChains.reduce((s, c) => s + c.available, 0);
   const totalPending  = allChains.reduce((s, c) => s + c.pending,  0);
 
@@ -138,7 +143,11 @@ export default function BalanceDashboard() {
         <div className="p-5 sm:p-6">
           <div className="mb-1 font-mono text-xs tracking-widest text-muted">UNIFIED BALANCE</div>
           <div className="flex flex-wrap items-end gap-2">
-            {arcLoading && isConnected ? (
+            {!isConnected ? (
+              <span className="font-mono text-4xl font-semibold text-muted sm:text-5xl">
+                $—
+              </span>
+            ) : arcLoading ? (
               <span className="font-mono text-4xl font-semibold text-muted sm:text-5xl animate-pulse">
                 $—
               </span>
