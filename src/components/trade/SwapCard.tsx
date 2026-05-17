@@ -68,18 +68,25 @@ export default function SwapCard() {
     setFromAmount(toAmount);
   };
 
-  // ── Real swap ──────────────────────────────────────────
+  // ── Swap ──────────────────────────────────────────────
   const handleSwap = async () => {
     if (!adapter) return;
     setStatus("swapping");
     setErrMsg("");
     setTxHash("");
 
-    try {
-      if (!CIRCLE_API_KEY) {
-        throw new Error("Circle API key is not configured. Add NEXT_PUBLIC_CIRCLE_API_KEY to your environment variables.");
+    // Proxy Circle API calls through Next.js server to avoid CORS
+    const origFetch = window.fetch;
+    window.fetch = (input, init?) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (url.startsWith("https://api.circle.com")) {
+        const proxied = url.replace("https://api.circle.com", "/api/circle-proxy");
+        return origFetch(proxied, init);
       }
+      return origFetch(input, init);
+    };
 
+    try {
       const result = await kit.swap({
         from: { adapter, chain: "Arc_Testnet" },
         tokenIn: fromToken,
@@ -90,19 +97,15 @@ export default function SwapCard() {
           slippageBps: Math.round(parseFloat(activeSlippage || "0.5") * 100),
         },
       });
-
       setTxHash(result.txHash);
       setStatus("success");
       refreshBalance();
     } catch (e: unknown) {
-      const msg = (e as Error).message ?? "Swap failed";
-      // Make Circle API errors more user-friendly
-      if (msg.includes("Failed to fetch") || msg.includes("Maximum retry")) {
-        setErrMsg("Circle swap service unavailable. Make sure CIRCLE_API_KEY is set and Arc Testnet swap is supported.");
-      } else {
-        setErrMsg(msg);
-      }
+      setErrMsg((e as Error).message ?? "Swap failed");
       setStatus("error");
+    } finally {
+      // Restore original fetch
+      window.fetch = origFetch;
     }
   };
 
@@ -127,7 +130,7 @@ export default function SwapCard() {
               <span className="font-mono text-sm text-success">Swap complete</span>
             </div>
             <p className="mb-3 font-mono text-xs text-muted">
-              Swapped {fromAmount} {fromToken} → {toToken} on Arc Testnet
+              Swapped {fromAmount} {fromToken} → {toAmount} {toToken} on Arc Testnet
             </p>
             {txHash && (
               <a
