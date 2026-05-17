@@ -61,7 +61,7 @@ export function useGatewayBalance(
 
   useEffect(() => {
     refresh();
-    const id = setInterval(refresh, 15_000);
+    const id = setInterval(refresh, 5_000);
     return () => clearInterval(id);
   }, [refresh]);
 

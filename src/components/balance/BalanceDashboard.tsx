@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
 import { useWallet } from "@/context/WalletContext";
 import { ARC_CHAIN_ID } from "@/lib/chains";
 import { useChainUsdcBalance } from "@/hooks/useChainUsdcBalance";
@@ -11,7 +10,7 @@ import { kit } from "@/lib/kit";
 // ── Chain config ────────────────────────────────────────────
 const CHAINS = [
   { id: "arc",  name: "Arc Testnet",       short: "Arc",   color: "#C8102E", rpc: "https://rpc.testnet.arc.network",                        usdc: "0x3600000000000000000000000000000000000000", gatewayChain: "Arc_Testnet" },
-  { id: "eth",  name: "Eth Sepolia",       short: "ETH",   color: "#627EEA", rpc: "https://rpc.sepolia.org",                                usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", gatewayChain: "Ethereum_Sepolia" },
+  { id: "eth",  name: "Eth Sepolia",       short: "ETH",   color: "#627EEA", rpc: "https://ethereum-sepolia.publicnode.com",                 usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", gatewayChain: "Ethereum_Sepolia" },
   { id: "base", name: "Base Sepolia",      short: "Base",  color: "#0052FF", rpc: "https://sepolia.base.org",                               usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", gatewayChain: "Base_Sepolia" },
   { id: "arb",  name: "Arb Sepolia",       short: "ARB",   color: "#12AAFF", rpc: "https://sepolia-rollup.arbitrum.io/rpc",                 usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", gatewayChain: "Arbitrum_Sepolia" },
   { id: "op",   name: "OP Sepolia",        short: "OP",    color: "#FF0420", rpc: "https://sepolia.optimism.io",                            usdc: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7", gatewayChain: "Optimism_Sepolia" },
@@ -206,6 +205,15 @@ function ChainRow({
       {/* ── Deposit panel ── */}
       {isDepositing && (
         <div className="mx-2 rounded-b-card border border-t-0 border-red-primary/30 bg-red-bg p-3">
+          <button
+            onClick={() => onDeposit(chain.id)}
+            className="float-right -mt-0.5 -mr-0.5 flex h-5 w-5 items-center justify-center rounded text-muted hover:text-cream-white transition-colors"
+            title="Close"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
           {!adapter ? (
             <p className="font-mono text-xs text-muted">Connect your wallet to deposit</p>
           ) : depState === "done" && depResult ? (
@@ -241,6 +249,15 @@ function ChainRow({
       {/* ── Withdraw panel ── */}
       {isWithdrawing && (
         <div className="mx-2 rounded-b-card border border-t-0 border-success/30 bg-success/5 p-3">
+          <button
+            onClick={() => onWithdraw(chain.id)}
+            className="float-right -mt-0.5 -mr-0.5 flex h-5 w-5 items-center justify-center rounded text-muted hover:text-cream-white transition-colors"
+            title="Close"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
           {!adapter ? (
             <p className="font-mono text-xs text-muted">Connect your wallet to withdraw</p>
           ) : withState === "done" && withResult ? (
@@ -443,26 +460,14 @@ export default function BalanceDashboard() {
   );
 }
 
-// ── Circle logo with fallback ──────────────────────────────
-function CircleLogo() {
-  const [err, setErr] = useState(false);
-  if (err) {
-    return (
-      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#1652F0] font-mono text-[10px] font-bold text-white">
-        C
-      </span>
-    );
-  }
+// ── Circle logo — SVG inline, zero file dependency ────────
+function CircleLogo({ size = 24 }: { size?: number }) {
   return (
-    <Image
-      src="/chains/circle.png"
-      alt="Circle"
-      width={24}
-      height={24}
-      className="rounded-full object-cover flex-shrink-0"
-      onError={() => setErr(true)}
-      unoptimized
-    />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+      <circle cx="12" cy="12" r="12" fill="#1652F0" />
+      <circle cx="12" cy="12" r="5.5" fill="none" stroke="white" strokeWidth="2.5" />
+    </svg>
   );
 }
 
