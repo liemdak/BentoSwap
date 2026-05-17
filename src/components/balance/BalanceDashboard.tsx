@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { useWallet } from "@/context/WalletContext";
 import { ARC_CHAIN_ID } from "@/lib/chains";
 import { useChainUsdcBalance } from "@/hooks/useChainUsdcBalance";
@@ -325,8 +326,11 @@ export default function BalanceDashboard() {
   const handleDeposit  = (id: string) => { setDepositChain(depositChain  === id ? null : id); setWithdrawChain(null); };
   const handleWithdraw = (id: string) => { setWithdrawChain(withdrawChain === id ? null : id); setDepositChain(null); };
 
-  // Gateway balance from Circle API
-  const { data: gateway, loading: gwLoading } = useGatewayBalance(isConnected ? address : null);
+  // Gateway balance from Circle API — requires adapter (not just address)
+  const { data: gateway, loading: gwLoading } = useGatewayBalance(
+    isConnected ? address : null,
+    isConnected ? adapter : null,
+  );
 
   const gwTotal   = gateway?.totalConfirmed ?? 0;
   const gwPending = gateway?.totalPending   ?? 0;
@@ -342,19 +346,7 @@ export default function BalanceDashboard() {
           <div className="h-1 w-full bg-gradient-to-r from-red-primary via-yellow-400 to-success" />
           <div className="p-4 sm:p-5">
             <div className="mb-3 flex items-center gap-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/chains/circle.png"
-                alt="Circle"
-                width={24}
-                height={24}
-                className="rounded-full object-cover flex-shrink-0 bg-white"
-                style={{ width: 24, height: 24 }}
-                onError={(e) => {
-                  const t = e.currentTarget as HTMLImageElement;
-                  t.style.display = "none";
-                }}
-              />
+              <CircleLogo />
               <span className="font-mono text-[10px] tracking-widest text-muted">CIRCLE GATEWAY</span>
             </div>
             <div className="font-mono text-3xl font-bold text-cream-white sm:text-4xl">
@@ -448,6 +440,29 @@ export default function BalanceDashboard() {
         )}
       </div>
     </div>
+  );
+}
+
+// ── Circle logo with fallback ──────────────────────────────
+function CircleLogo() {
+  const [err, setErr] = useState(false);
+  if (err) {
+    return (
+      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#1652F0] font-mono text-[10px] font-bold text-white">
+        C
+      </span>
+    );
+  }
+  return (
+    <Image
+      src="/chains/circle.png"
+      alt="Circle"
+      width={24}
+      height={24}
+      className="rounded-full object-cover flex-shrink-0"
+      onError={() => setErr(true)}
+      unoptimized
+    />
   );
 }
 
