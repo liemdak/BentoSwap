@@ -91,7 +91,7 @@ export default function Navbar() {
             {/* Wallet button */}
             {isConnected ? (
               <div className="relative group">
-                <button className="flex items-center gap-2 rounded-lg border border-red-dim/50 bg-red-bg px-3 py-2 font-mono text-xs text-cream-white transition-colors hover:bg-red-bg/80">
+                <button className="flex items-center gap-2 rounded-lg border border-success/50 bg-success/10 px-3 py-2 font-mono text-xs text-success transition-colors hover:bg-success/20">
                   <span className="h-1.5 w-1.5 rounded-full bg-success" />
                   {shortAddress}
                 </button>

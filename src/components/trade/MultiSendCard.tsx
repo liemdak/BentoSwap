@@ -22,7 +22,7 @@ export default function MultiSendCard() {
   ]);
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
-  const [results, setResults] = useState<{ id: number; status: "ok" | "fail" }[]>([]);
+  const [results, setResults] = useState<{ id: number; status: "ok" | "fail"; txHash?: string }[]>([]);
 
   const totalAmount = recipients.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
   const totalFee = recipients.length * NETWORK_FEE_PER_TX;
@@ -55,7 +55,9 @@ export default function MultiSendCard() {
       setProgress(i);
       // Simulate kit.send() call (~0.5s per tx on Arc)
       await new Promise((res) => setTimeout(res, 600));
-      setResults((prev) => [...prev, { id: valid[i].id, status: "ok" }]);
+      // Simulated tx hash — replace with real kit.send() hash when integrated
+      const fakeTxHash = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+      setResults((prev) => [...prev, { id: valid[i].id, status: "ok", txHash: fakeTxHash }]);
     }
 
     setProgress(null);
@@ -209,6 +211,21 @@ export default function MultiSendCard() {
             <p className="mt-1 font-mono text-[11px] text-muted">
               Total sent: {totalAmount.toFixed(2)} USDC · Fee: {totalFee.toFixed(3)} USDC
             </p>
+            {/* Per-tx ArcScan links */}
+            <div className="mt-2 space-y-1 border-t border-success/20 pt-2">
+              {results.filter((r) => r.status === "ok" && r.txHash).map((r, idx) => (
+                <a
+                  key={r.id}
+                  href={`https://testnet.arcscan.app/tx/${r.txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between gap-2 font-mono text-[10px] text-muted hover:text-success transition-colors"
+                >
+                  <span>Tx {idx + 1} — {r.txHash!.slice(0, 10)}...{r.txHash!.slice(-6)}</span>
+                  <span className="text-success/70">↗ ArcScan</span>
+                </a>
+              ))}
+            </div>
           </div>
         )}
 
