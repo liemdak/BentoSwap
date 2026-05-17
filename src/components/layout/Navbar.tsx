@@ -9,6 +9,7 @@ import { ARC_CHAIN_ID } from "@/lib/chains";
 
 const NAV_LINKS = [
   { href: "/trade",   label: "Trade" },
+  { href: "/bridge",  label: "Bridge" },
   { href: "/balance", label: "Balance" },
   { href: "/agent",   label: "Agent", isNew: true },
   { href: "/faucet",  label: "Faucet" },
