@@ -76,6 +76,10 @@ export default function SwapCard() {
     setTxHash("");
 
     try {
+      if (!CIRCLE_API_KEY) {
+        throw new Error("Circle API key is not configured. Add NEXT_PUBLIC_CIRCLE_API_KEY to your environment variables.");
+      }
+
       const result = await kit.swap({
         from: { adapter, chain: "Arc_Testnet" },
         tokenIn: fromToken,
@@ -91,7 +95,13 @@ export default function SwapCard() {
       setStatus("success");
       refreshBalance();
     } catch (e: unknown) {
-      setErrMsg((e as Error).message ?? "Swap failed");
+      const msg = (e as Error).message ?? "Swap failed";
+      // Make Circle API errors more user-friendly
+      if (msg.includes("Failed to fetch") || msg.includes("Maximum retry")) {
+        setErrMsg("Circle swap service unavailable. Make sure CIRCLE_API_KEY is set and Arc Testnet swap is supported.");
+      } else {
+        setErrMsg(msg);
+      }
       setStatus("error");
     }
   };
