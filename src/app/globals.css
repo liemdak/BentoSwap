@@ -2,26 +2,158 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =========================================================
+   Bento — Global CSS
+   Background: warm diagonal gradient image (cream → terracotta)
+   Cards: dark (ink-*) floating on light background
+   Page-level text: dark (#16120E)
+   ========================================================= */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Page-level text (on light background) */
+  --page-text: #16120E;
+  --page-text-muted: #6B5D4F;
+
+  /* Card surfaces (dark, stays dark on light bg) */
+  --surface: #1F1A14;
+  --surface2: #2A2318;
+  --border: #3A3020;
+  --border2: #4A3E2A;
+
+  /* Brand */
+  --red: #C8102E;
+  --cream: #E8DFC0;
+  --muted: #8A7E6A;
+  --success: #2D9B6F;
+
+  /* Glass nav */
+  --glass-bg: rgba(245, 240, 232, 0.78);
+  --glass-border: rgba(200, 168, 122, 0.25);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  /* Warm diagonal background: cream top-left → terracotta bottom-right */
+  background-image: url('/bg.png');
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  /* Fallback if image fails to load */
+  background-color: #E8D5C4;
+
+  color: var(--page-text);
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* iOS: background-attachment fixed causes glitches — use scroll on mobile */
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+/* ── iOS: prevent zoom on input focus (requires font-size ≥ 16px) ── */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(200,168,122,0.4); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(200,168,122,0.7); }
+
+/* ── Selection ──────────────────────────────────────────── */
+::selection { background: rgba(200,16,46,0.2); color: #16120E; }
+
+/* ── Hide number input spinners ─────────────────────────── */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* ── Date / Time inputs on dark backgrounds ─────────────── */
+input[type="date"],
+input[type="time"] {
+  color-scheme: dark;
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+  cursor: pointer;
+}
+
+/* ── Bubble float animation ──────────────────────────────── */
+@keyframes bubble-rise {
+  0%   { transform: translateY(0) scale(1);   opacity: 0; }
+  10%  { opacity: 1; }
+  85%  { opacity: 0.6; }
+  100% { transform: translateY(-120px) scale(1.15); opacity: 0; }
+}
+.bubble {
+  position: absolute;
+  bottom: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.35), rgba(200,168,122,0.08));
+  border: 1px solid rgba(200,168,122,0.25);
+  backdrop-filter: blur(2px);
+  animation: bubble-rise linear infinite;
+  pointer-events: none;
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .text-balance { text-wrap: balance; }
+
+  /* Outlined text — transparent fill, visible stroke */
+  .text-outline {
+    -webkit-text-stroke: 1.5px #16120E;
+    color: transparent;
+    transition: color 0.25s ease, -webkit-text-stroke-color 0.25s ease;
   }
+  .text-outline-red {
+    -webkit-text-stroke: 2px #C8102E;
+    color: transparent;
+    transition: color 0.25s ease, -webkit-text-stroke-color 0.25s ease;
+  }
+  /* Hover: fill in the text (hero) */
+  .hero-heading:hover .text-outline      { color: #16120E;  -webkit-text-stroke-color: transparent; }
+  .hero-heading:hover .text-outline-red  { color: #C8102E;  -webkit-text-stroke-color: transparent; }
+  /* Hover: fill in standalone page titles */
+  .text-outline:hover { color: #16120E;  -webkit-text-stroke-color: transparent; }
+
+  /* Dark card floating on light background */
+  .bento-card {
+    @apply bg-ink-surface border border-ink-border rounded-card;
+    box-shadow: 0 4px 24px rgba(22, 18, 14, 0.18), 0 1px 4px rgba(22, 18, 14, 0.10);
+  }
+
+  /* Glass surface (for nav, overlays) */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-color: var(--glass-border);
+  }
+
+  /* Tag  { TAG } */
+  .bento-tag {
+    @apply font-mono text-xs tracking-widest uppercase border border-red-primary/30 rounded px-2 py-0.5;
+    color: var(--red);
+  }
+
+  /* Page-level heading (on light background) */
+  .page-title  { color: var(--page-text); }
+  .page-muted  { color: var(--page-text-muted); }
 }
