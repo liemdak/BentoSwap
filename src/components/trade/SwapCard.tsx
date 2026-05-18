@@ -153,6 +153,22 @@ export default function SwapCard() {
           </div>
         )}
 
+        {/* ── Swapping loader ────────────────────────────── */}
+        {status === "swapping" && (
+          <div className="mb-4 rounded-card border border-yellow-400/30 bg-yellow-400/5 p-3">
+            <div className="flex items-center gap-2.5">
+              <svg className="animate-spin h-4 w-4 flex-shrink-0 text-yellow-400" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.25"/>
+                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+              </svg>
+              <p className="font-mono text-xs text-yellow-400">
+                Swapping {fromAmount} {fromToken} → {toToken}…
+              </p>
+            </div>
+            <p className="mt-1.5 font-mono text-[10px] text-muted">Confirm in your wallet if prompted</p>
+          </div>
+        )}
+
         {/* ── Error ─────────────────────────────────────── */}
         {status === "error" && (
           <div className="mb-4 rounded-card border border-red-primary/30 bg-red-bg p-3">

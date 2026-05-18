@@ -108,10 +108,11 @@ export default function AgentPanel() {
   const [deployedInfo, setDeployedInfo] = useState<{ address: string; label: string } | null>(null);
 
   // Fund agent wallet from inside success screen
-  const [fundAmt,   setFundAmt]   = useState("");
-  const [fundState, setFundState] = useState<"idle"|"loading"|"done"|"error">("idle");
-  const [fundErr,   setFundErr]   = useState("");
-  const [fundTx,    setFundTx]    = useState("");
+  const [fundAmt,      setFundAmt]      = useState("");
+  const [fundState,    setFundState]    = useState<"idle"|"loading"|"done"|"error">("idle");
+  const [fundErr,      setFundErr]      = useState("");
+  const [fundTx,       setFundTx]       = useState("");
+  const [fundTxUrl,    setFundTxUrl]    = useState("");
 
   const handleModalFund = async () => {
     if (!userAdapter || !fundAmt || !deployedInfo) return;
@@ -123,7 +124,10 @@ export default function AgentPanel() {
         amount: fundAmt,
         token:  "USDC",
       });
-      setFundTx(result.txHash ?? "");
+      const hash = result.txHash ?? "";
+      const url  = result.explorerUrl ?? (hash ? `https://testnet.arcscan.app/tx/${hash}` : "");
+      setFundTx(hash);
+      setFundTxUrl(url);
       setFundState("done");
       setFundAmt("");
     } catch (e: unknown) {
@@ -468,11 +472,14 @@ export default function AgentPanel() {
                         {fundState === "done" ? (
                           <div className="space-y-1">
                             <p className="font-mono text-[10px] text-success">✓ Funded! Agent is ready to run.</p>
-                            {fundTx && (
-                              <a href={`https://testnet.arcscan.app/tx/${fundTx}`} target="_blank" rel="noopener noreferrer"
-                                className="block font-mono text-[9px] text-success/70 hover:text-success">
-                                {fundTx.slice(0,10)}...{fundTx.slice(-6)} ↗
+                            {fundTxUrl ? (
+                              <a href={fundTxUrl} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-1 font-mono text-[9px] text-success/70 hover:text-success">
+                                {fundTx ? `${fundTx.slice(0,10)}...${fundTx.slice(-6)}` : "View transaction"}
+                                <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 10L10 2M10 2H5M10 2v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                               </a>
+                            ) : (
+                              <p className="font-mono text-[9px] text-muted">Transaction submitted</p>
                             )}
                           </div>
                         ) : isConnected ? (
@@ -624,31 +631,14 @@ export default function AgentPanel() {
                             )}
                           </div>
 
-                          {/* Row 2: first date + time */}
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-mono text-[10px] text-muted">First payment</span>
-                            <input
-                              type="date" value={r.firstDate}
-                              min={new Date().toISOString().split("T")[0]}
-                              onChange={e => updatePayout(i, "firstDate", e.target.value)}
-                              className="rounded border border-ink-border bg-black px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none"
-                            />
-                            <span className="font-mono text-[10px] text-muted">at</span>
-                            <input
-                              type="time" value={r.time}
-                              onChange={e => updatePayout(i, "time", e.target.value)}
-                              className="rounded border border-ink-border bg-black px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none"
-                            />
-                            {r.firstDate && (
-                              <span className="font-mono text-[10px] text-muted">
-                                → then repeats {payoutFreq === "monthly"
-                                  ? `every month on day ${new Date(r.firstDate + "T12:00:00").getDate()}`
-                                  : payoutFreq === "weekly"
-                                  ? `every ${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(r.firstDate + "T12:00:00").getDay()]}`
-                                  : "every day"}
-                              </span>
-                            )}
-                          </div>
+                          {/* Row 2: date + time picker */}
+                          <DateTimePicker
+                            date={r.firstDate}
+                            time={r.time}
+                            freq={payoutFreq}
+                            onDateChange={v => updatePayout(i, "firstDate", v)}
+                            onTimeChange={v => updatePayout(i, "time", v)}
+                          />
                         </div>
                       ))}
 
@@ -832,6 +822,100 @@ function FreqPicker({ value, onChange, row }: { value: Freq; onChange: (v: Freq)
   );
 }
 
+// ── Date + Time picker with timezone + presets ─────────────
+function DateTimePicker({ date, time, freq, onDateChange, onTimeChange }: {
+  date: string; time: string; freq: string;
+  onDateChange: (v: string) => void;
+  onTimeChange: (v: string) => void;
+}) {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Quick date presets
+  const presets = [
+    { label: "Tomorrow", days: 1 },
+    { label: "+1 week",  days: 7 },
+    { label: "+1 month", days: 30 },
+  ];
+  const applyPreset = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    onDateChange(d.toISOString().split("T")[0]);
+  };
+
+  const repeatLabel = date
+    ? (freq === "monthly"
+        ? `Repeats every month on day ${new Date(date + "T12:00:00").getDate()}`
+        : freq === "weekly"
+        ? `Repeats every ${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date(date + "T12:00:00").getDay()]}`
+        : "Repeats every day")
+    : null;
+
+  return (
+    <div className="space-y-2">
+      {/* Date row */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="font-mono text-[10px] text-muted w-24 flex-shrink-0">First payment</span>
+        <input
+          type="date"
+          value={date}
+          min={new Date().toISOString().split("T")[0]}
+          onChange={e => onDateChange(e.target.value)}
+          className="rounded border border-ink-border bg-black px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-red-primary/50 cursor-pointer"
+        />
+        {/* Presets */}
+        <div className="flex gap-1">
+          {presets.map(p => (
+            <button key={p.label} onClick={() => applyPreset(p.days)}
+              className="rounded border border-ink-border2 px-2 py-1 font-mono text-[9px] text-muted hover:border-red-primary/40 hover:text-cream-white transition-colors">
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Time row */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="font-mono text-[10px] text-muted w-24 flex-shrink-0">Time</span>
+        <input
+          type="time"
+          value={time}
+          onChange={e => onTimeChange(e.target.value)}
+          className="rounded border border-ink-border bg-black px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-red-primary/50"
+        />
+        {/* Quick time presets */}
+        <div className="flex gap-1">
+          {["09:00","12:00","18:00"].map(t => (
+            <button key={t} onClick={() => onTimeChange(t)}
+              className={`rounded border px-2 py-1 font-mono text-[9px] transition-colors ${
+                time === t
+                  ? "border-red-primary/50 bg-red-bg text-red-primary"
+                  : "border-ink-border2 text-muted hover:text-cream-white"
+              }`}>
+              {t}
+            </button>
+          ))}
+        </div>
+        {/* Timezone badge */}
+        <span className="flex items-center gap-1 rounded border border-ink-border2 px-2 py-1">
+          <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+            <circle cx="6" cy="6" r="5" stroke="#6B5D4F" strokeWidth="1.2"/>
+            <path d="M6 1v5l3 2" stroke="#6B5D4F" strokeWidth="1.2" strokeLinecap="round"/>
+          </svg>
+          <span className="font-mono text-[9px] text-muted">{tz}</span>
+        </span>
+      </div>
+
+      {/* Repeat summary */}
+      {repeatLabel && (
+        <div className="flex items-center gap-1.5 pl-1">
+          <span className="font-mono text-[9px] text-red-primary">→</span>
+          <span className="font-mono text-[10px] text-muted">{repeatLabel}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SplitRuleList({ rules, totalAmount, onUpdate, onRemove, onAdd, minRules, hidePctAmount }: {
   rules: { address: string; pct: string }[];
   totalAmount: number;
@@ -913,6 +997,7 @@ function AgentWalletRow({ address }: { address: string }) {
   const [fundState,  setFundState]  = useState<"idle"|"loading"|"done"|"error">("idle");
   const [fundErr,    setFundErr]    = useState("");
   const [fundTxHash, setFundTxHash] = useState("");
+  const [fundTxUrl,  setFundTxUrl]  = useState("");
 
   const copy = () => {
     navigator.clipboard.writeText(address);
@@ -933,7 +1018,10 @@ function AgentWalletRow({ address }: { address: string }) {
         amount: fundAmt,
         token:  "USDC",
       });
-      setFundTxHash(result.txHash ?? "");
+      const hash = result.txHash ?? "";
+      const url  = result.explorerUrl ?? (hash ? `https://testnet.arcscan.app/tx/${hash}` : "");
+      setFundTxHash(hash);
+      setFundTxUrl(url);
       setFundState("done");
       setFundAmt("");
       setTimeout(refresh, 3000);
@@ -989,14 +1077,14 @@ function AgentWalletRow({ address }: { address: string }) {
           {fundState === "done" ? (
             <div className="space-y-1">
               <p className="font-mono text-[10px] text-success">✓ Funded successfully</p>
-              {fundTxHash && (
-                <a
-                  href={`https://testnet.arcscan.app/tx/${fundTxHash}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="block font-mono text-[9px] text-success/70 hover:text-success"
-                >
-                  {fundTxHash.slice(0,10)}...{fundTxHash.slice(-6)} ↗
+              {fundTxUrl ? (
+                <a href={fundTxUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1 font-mono text-[9px] text-success/70 hover:text-success">
+                  {fundTxHash ? `${fundTxHash.slice(0,10)}...${fundTxHash.slice(-6)}` : "View transaction"}
+                  <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 10L10 2M10 2H5M10 2v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                 </a>
+              ) : (
+                <p className="font-mono text-[9px] text-muted">Transaction submitted</p>
               )}
               <button
                 onClick={() => { setFundState("idle"); setShowFund(false); }}

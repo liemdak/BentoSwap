@@ -278,8 +278,17 @@ export default function BridgeCard() {
         {(bridgeState === "running" || bridgeState === "done" || bridgeState === "error") && (
           <div className="mt-4 rounded-card border border-ink-border bg-black p-4">
             <div className="mb-3 flex items-center justify-between">
-              <span className="font-mono text-[11px] text-muted">
-                {bridgeState === "done" ? "Bridge complete ✓" : bridgeState === "error" ? "Bridge failed" : "Bridge in progress..."}
+              <span className={`flex items-center gap-1.5 font-mono text-[11px] ${
+                bridgeState === "done"  ? "text-success" :
+                bridgeState === "error" ? "text-red-primary" : "text-yellow-400"
+              }`}>
+                {bridgeState === "running" && (
+                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.25"/>
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+                  </svg>
+                )}
+                {bridgeState === "done" ? "Bridge complete ✓" : bridgeState === "error" ? "Bridge failed" : "Bridging in progress…"}
               </span>
               {bridgeState === "done" && (
                 <span className="font-mono text-[10px] text-muted">
@@ -297,8 +306,11 @@ export default function BridgeCard() {
                       </div>
                     )}
                     {step.state === "active" && (
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full border border-red-primary">
-                        <span className="h-2 w-2 rounded-full bg-red-primary animate-pulse" />
+                      <div className="flex h-5 w-5 items-center justify-center">
+                        <svg className="animate-spin h-5 w-5 text-yellow-400" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.25"/>
+                          <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+                        </svg>
                       </div>
                     )}
                     {step.state === "error" && (
@@ -314,9 +326,9 @@ export default function BridgeCard() {
                   </div>
                   <div>
                     <div className={`font-mono text-sm font-medium ${
-                      step.state === "done" ? "text-success" :
-                      step.state === "active" ? "text-cream-white" :
-                      step.state === "error" ? "text-red-primary" : "text-muted"
+                      step.state === "done"   ? "text-success" :
+                      step.state === "active" ? "text-yellow-400" :
+                      step.state === "error"  ? "text-red-primary" : "text-muted"
                     }`}>{step.name}</div>
                     {step.txHash && step.explorerUrl && (
                       <a href={step.explorerUrl}
