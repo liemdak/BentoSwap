@@ -46,7 +46,7 @@ export default function GuidePage() {
           <div className="mb-3 font-mono text-[11px] tracking-widest text-red-primary">{"{ AGENT GUIDE }"}</div>
           <h1 className="font-display text-5xl text-cream-white">Agent Guide</h1>
           <p className="mt-3 max-w-xl font-body text-base text-muted leading-relaxed">
-            Hiểu rõ cách hoạt động của Agent Wallet trước khi deploy. Bao gồm hướng dẫn khôi phục quỹ và bảo mật.
+            Understand how Agent Wallets work before deploying. Covers fund recovery, security model, and step-by-step walkthroughs.
           </p>
         </div>
 
@@ -82,25 +82,25 @@ export default function GuidePage() {
               <SectionHeader num="01" title="Wallet Architecture" />
               <div className="space-y-5">
                 <p className="font-body text-sm leading-relaxed text-muted">
-                  Mỗi agent task sử dụng một <strong className="text-cream-dim">Developer Controlled Wallet (DCW)</strong> riêng biệt do Circle quản lý — hoàn toàn tách biệt với ví MetaMask của bạn.
+                  Each agent task uses a separate <strong className="text-cream-dim">Developer Controlled Wallet (DCW)</strong> managed by Circle — completely isolated from your MetaMask wallet.
                 </p>
 
                 {/* Flow diagram */}
                 <div className="rounded-card border border-ink-border bg-ink-surface p-5">
                   <div className="font-mono text-[10px] tracking-widest text-muted mb-4">{"// ARCHITECTURE"}</div>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-0">
-                    <FlowBox label="MetaMask Wallet" sub="Ví của bạn" color="blue" />
+                    <FlowBox label="MetaMask Wallet" sub="Your wallet" color="blue" />
                     <FlowArrow label="fund" />
                     <FlowBox label="Agent Wallet" sub="Circle DCW" color="red" />
                     <FlowArrow label="execute" />
-                    <FlowBox label="Target Wallets" sub="Địa chỉ đích" color="green" />
+                    <FlowBox label="Target Wallets" sub="Configured addresses" color="green" />
                   </div>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-3">
-                  <InfoCard icon="🔑" title="Ví của bạn an toàn" body="Agent KHÔNG có quyền truy cập MetaMask. Nó chỉ nhận tiền từ bạn, không bao giờ rút ngược." />
-                  <InfoCard icon="🏦" title="Mỗi task = 1 ví mới" body="Deploy Auto Top-Up và Multi-send → 2 địa chỉ 0x... hoàn toàn khác nhau." />
-                  <InfoCard icon="🔄" title="Đổi máy vẫn giữ task" body="Tasks được đồng bộ qua Firebase theo địa chỉ MetaMask — đăng nhập lại là thấy đủ." />
+                  <InfoCard icon="🔑" title="Your wallet stays safe" body="The agent has NO access to MetaMask. It only receives funds from you and never pulls back." />
+                  <InfoCard icon="🏦" title="1 task = 1 unique wallet" body="Deploy Auto Top-Up and Multi-send → 2 completely different 0x... addresses." />
+                  <InfoCard icon="🔄" title="Tasks survive device switch" body="Tasks are synced to Firebase by your MetaMask address — reconnect from any device." />
                 </div>
               </div>
             </section>
@@ -110,18 +110,18 @@ export default function GuidePage() {
               <SectionHeader num="02" title="Auto Top-Up" />
               <div className="space-y-5">
                 <p className="font-body text-sm leading-relaxed text-muted">
-                  Tự động nạp USDC vào ví MetaMask khi số dư xuống dưới ngưỡng bạn đặt. Bạn chỉ cần fund ví agent một lần.
+                  Automatically refill your MetaMask wallet when balance drops below the threshold you set. Fund the agent wallet once and let it run.
                 </p>
 
                 <div className="rounded-card border border-ink-border bg-ink-surface p-5 space-y-3">
-                  <div className="font-mono text-[10px] tracking-widest text-muted">{"// FLOW"}</div>
+                  <div className="font-mono text-[10px] tracking-widest text-muted">{"// HOW IT WORKS"}</div>
                   {[
-                    { n: 1, text: "Bạn đặt ngưỡng: ví MetaMask < $10 → refill $50" },
-                    { n: 2, text: "Deploy agent → tạo Agent Wallet mới (0xABC...)" },
-                    { n: 3, text: "Bạn fund Agent Wallet với số tiền bạn muốn dự phòng" },
-                    { n: 4, text: "Bento server poll số dư MetaMask mỗi ~20 giây" },
-                    { n: 5, text: "Khi số dư < $10 → Agent Wallet tự động gửi $50 về MetaMask" },
-                    { n: 6, text: "Safety cap giới hạn tổng gửi tối đa / 24h, tránh rủi ro" },
+                    { n: 1, text: "Set a threshold — e.g. trigger when MetaMask balance < $10" },
+                    { n: 2, text: "Deploy the agent → a new Agent Wallet (0xABC...) is created" },
+                    { n: 3, text: "Fund the Agent Wallet with your desired reserve amount" },
+                    { n: 4, text: "Bento server polls your MetaMask balance every ~20 seconds" },
+                    { n: 5, text: "When balance < $10 → Agent Wallet automatically sends $50 to MetaMask" },
+                    { n: 6, text: "Safety cap limits the total sent per 24h to prevent runaway spending" },
                   ].map(s => (
                     <div key={s.n} className="flex items-start gap-3">
                       <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-primary font-mono text-[10px] font-bold text-white">{s.n}</span>
@@ -130,7 +130,7 @@ export default function GuidePage() {
                   ))}
                 </div>
 
-                <Callout type="tip" text="Nạp đủ tiền vào Agent Wallet để cover nhiều lần refill. Ví dụ: muốn refill $50 tối đa 5 lần → nạp $250." />
+                <Callout type="tip" text="Fund enough to cover multiple refills. Example: $50 refill amount × 5 cycles = fund $250 into the agent wallet." />
               </div>
             </section>
 
@@ -141,21 +141,21 @@ export default function GuidePage() {
                 <div className="grid gap-4 sm:grid-cols-3">
                   <ModeCard
                     tag="AUTO SPLIT"
-                    title="Split theo %"
-                    steps={["Đặt tổng số tiền (VD: $1000)", "Phân bổ %: Ví A 60%, Ví B 40%", "Chọn lịch: Daily / Weekly / Monthly", "Agent tự split khi đến ngày"]}
+                    title="Split by percentage"
+                    steps={["Set total amount (e.g. $1,000)", "Assign %: Wallet A 60%, Wallet B 40%", "Choose schedule: Daily / Weekly / Monthly", "Agent splits automatically on schedule"]}
                   />
                   <ModeCard
                     tag="RECURRING PAYOUT"
-                    title="Trả lương định kỳ"
-                    steps={["Thêm danh sách người nhận", "Đặt số tiền cố định mỗi người", "Chọn ngày bắt đầu + giờ", "Agent gửi đúng ngày, đúng giờ"]}
+                    title="Recurring payroll"
+                    steps={["Add recipient list with names", "Set fixed USDC amount per person", "Choose start date and time", "Agent sends on the exact date and time"]}
                   />
                   <ModeCard
                     tag="AUTO DISTRIBUTE"
-                    title="Phân phối thặng dư"
-                    steps={["Đặt ngưỡng trên (VD: > $5000)", "Khi vượt ngưỡng → split phần dư", "Phân bổ theo % tới các ví", "Tự động — không cần can thiệp"]}
+                    title="Distribute surplus"
+                    steps={["Set an upper cap (e.g. > $5,000)", "When exceeded → distribute surplus", "Allocate by % to each wallet", "Fully automatic, no manual action"]}
                   />
                 </div>
-                <Callout type="info" text="Tất cả 3 mode đều gasless — Circle Paymaster trả phí gas. Bạn chỉ cần USDC trong Agent Wallet." />
+                <Callout type="info" text="All 3 modes are gasless — Circle Paymaster covers gas fees. You only need USDC inside the Agent Wallet." />
               </div>
             </section>
 
@@ -167,28 +167,28 @@ export default function GuidePage() {
                   <SecurityCard
                     icon="🔐"
                     title="HMAC Token"
-                    body="Mỗi task có một token bảo mật riêng. Server chỉ thực thi lệnh khi token đúng — ngay cả developer cũng không thể chạy task của bạn mà không có token này."
+                    body="Each task has its own security token. The server only executes commands when the token matches — even the developer cannot run your task without it."
                   />
                   <SecurityCard
                     icon="🛡️"
                     title="Safety Cap"
-                    body="Giới hạn tổng USDC agent được phép gửi trong 24h. Nếu agent bị lỗi hoặc bị tấn công, thiệt hại bị giới hạn bởi cap này."
+                    body="Limits total USDC the agent can send per 24h. If the agent misbehaves or is compromised, losses are bounded by this cap."
                   />
                   <SecurityCard
                     icon="📋"
-                    title="Whitelist địa chỉ"
-                    body="Agent chỉ được gửi đến các địa chỉ bạn đã cấu hình lúc deploy. Không thể gửi đến địa chỉ ngoài danh sách."
+                    title="Address whitelist"
+                    body="Agent can only send to addresses configured at deploy time. No funds can be sent to arbitrary addresses outside the list."
                   />
                   <SecurityCard
                     icon="⏸️"
-                    title="Pause / Cancel"
-                    body="Dừng hoặc hủy task bất cứ lúc nào. Khi cancel, ReclaimFunds widget giúp bạn rút USDC còn lại về MetaMask ngay lập tức."
+                    title="Pause / Cancel anytime"
+                    body="Stop or cancel tasks at any time. When canceling, the Reclaim Funds popup lets you withdraw remaining USDC back to MetaMask immediately."
                   />
                 </div>
 
                 <Callout
                   type="warning"
-                  text="Agent Wallet là Circle Developer Controlled Wallet — về mặt kỹ thuật, developer có thể access. Chỉ nên dùng trên testnet với lượng tiền nhỏ."
+                  text="Agent Wallets are Circle Developer Controlled Wallets — technically the developer has access. Use testnet only and keep amounts small."
                 />
               </div>
             </section>
@@ -198,23 +198,23 @@ export default function GuidePage() {
               <SectionHeader num="05" title="Reclaim Funds" />
               <div className="space-y-5">
                 <p className="font-body text-sm leading-relaxed text-muted">
-                  Khi cancel task, nếu Agent Wallet còn USDC, bạn cần rút về ví MetaMask. Có 2 cách:
+                  When you cancel a task, any USDC remaining in the Agent Wallet needs to be withdrawn back to your MetaMask. There are 2 ways:
                 </p>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="rounded-card border border-success/30 bg-success/5 p-4 space-y-2">
-                    <div className="font-mono text-[10px] tracking-widest text-success">CÁCH 1 — TỰ ĐỘNG</div>
+                    <div className="font-mono text-[10px] tracking-widest text-success">METHOD 1 — AUTOMATIC</div>
                     <p className="font-mono text-xs text-cream-dim leading-relaxed">
-                      Bấm <strong>Cancel</strong> trong task list → popup kiểm tra số dư → bấm <strong>Reclaim & Cancel</strong> → tiền về ví ngay.
+                      Click <strong>Cancel</strong> in the task list → balance popup appears → click <strong>Reclaim & Cancel</strong> → funds sent back immediately.
                     </p>
                     <div className="flex items-center gap-2 rounded border border-success/20 bg-success/10 px-3 py-2">
-                      <span className="font-mono text-[9px] text-success">✓ Khuyến nghị</span>
+                      <span className="font-mono text-[9px] text-success">✓ Recommended</span>
                     </div>
                   </div>
                   <div className="rounded-card border border-ink-border2 bg-ink-surface2 p-4 space-y-2">
-                    <div className="font-mono text-[10px] tracking-widest text-cream-dim">CÁCH 2 — THỦ CÔNG</div>
+                    <div className="font-mono text-[10px] tracking-widest text-cream-dim">METHOD 2 — MANUAL RECOVERY</div>
                     <p className="font-mono text-xs text-muted leading-relaxed">
-                      Nếu mất task (xóa cache, đổi máy), dùng file <strong className="text-cream-dim">backup.json</strong> đã tải lúc deploy để khôi phục và rút tiền bên dưới.
+                      If tasks are lost (cleared cache, switched device), use the <strong className="text-cream-dim">backup.json</strong> file downloaded at deploy time to recover funds below.
                     </p>
                   </div>
                 </div>
@@ -244,13 +244,13 @@ export default function GuidePage() {
 // ══ Manual Withdraw Widget ══════════════════════════════════
 function ManualWithdrawWidget() {
   const { address: userAddress, isConnected } = useWallet();
-  const [file,    setFile]    = useState<File | null>(null);
-  const [tasks,   setTasks]   = useState<StoredTask[]>([]);
-  const [parseErr,setParseErr]= useState("");
-  const [selected,setSelected]= useState<StoredTask | null>(null);
-  const [state,   setState]   = useState<"idle"|"loading"|"done"|"error">("idle");
-  const [txUrl,   setTxUrl]   = useState("");
-  const [reclaimErr,setReclaimErr] = useState("");
+  const [file,       setFile]       = useState<File | null>(null);
+  const [tasks,      setTasks]      = useState<StoredTask[]>([]);
+  const [parseErr,   setParseErr]   = useState("");
+  const [selected,   setSelected]   = useState<StoredTask | null>(null);
+  const [state,      setState]      = useState<"idle"|"loading"|"done"|"error">("idle");
+  const [txUrl,      setTxUrl]      = useState("");
+  const [reclaimErr, setReclaimErr] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (f: File) => {
@@ -313,15 +313,17 @@ function ManualWithdrawWidget() {
                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 10L10 2M10 2H5M10 2v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
               </a>
             )}
-            <button onClick={() => { setState("idle"); setFile(null); setTasks([]); setSelected(null); }}
-              className="font-mono text-[10px] text-muted hover:text-cream-white">
+            <button
+              onClick={() => { setState("idle"); setFile(null); setTasks([]); setSelected(null); }}
+              className="font-mono text-[10px] text-muted hover:text-cream-white"
+            >
               Withdraw another task →
             </button>
           </div>
         ) : (
           <>
             <p className="font-mono text-xs text-muted">
-              Upload file <span className="text-cream-dim">backup.json</span> đã tải lúc deploy agent để rút tiền về ví MetaMask đang kết nối.
+              Upload the <span className="text-cream-dim">backup.json</span> file you downloaded at deploy time to withdraw funds to your connected MetaMask wallet.
             </p>
 
             {/* File drop zone */}
@@ -339,8 +341,8 @@ function ManualWithdrawWidget() {
                 <span className="font-mono text-xs text-cream-dim">{file.name}</span>
               ) : (
                 <>
-                  <span className="font-mono text-xs text-cream-dim">Click hoặc kéo thả backup.json</span>
-                  <span className="font-mono text-[10px] text-muted">Chỉ chấp nhận file JSON</span>
+                  <span className="font-mono text-xs text-cream-dim">Click or drag & drop backup.json</span>
+                  <span className="font-mono text-[10px] text-muted">JSON files only</span>
                 </>
               )}
             </div>
@@ -356,7 +358,7 @@ function ManualWithdrawWidget() {
             {/* Task selector */}
             {tasks.length > 0 && (
               <div className="space-y-2">
-                <p className="font-mono text-[11px] text-muted">Chọn task cần rút tiền:</p>
+                <p className="font-mono text-[11px] text-muted">Select the task to withdraw from:</p>
                 {tasks.map(t => (
                   <button key={t.id} onClick={() => setSelected(t)}
                     className={`flex w-full items-center justify-between rounded-card border px-4 py-3 transition-colors ${
@@ -404,7 +406,7 @@ function AgentBalanceRow({ walletAddress, isConnected, userAddress, onReclaim, s
   err:           string;
 }) {
   const { balance, loading } = useArcUsdcBalance(walletAddress);
-  const balNum = parseFloat(balance);
+  const balNum     = parseFloat(balance);
   const hasBalance = !loading && balNum >= 0.01;
 
   return (
@@ -431,11 +433,15 @@ function AgentBalanceRow({ walletAddress, isConnected, userAddress, onReclaim, s
           disabled={state === "loading"}
           className="w-full rounded-lg border border-yellow-500/50 bg-yellow-500/15 py-3 font-body text-sm font-medium text-yellow-400 transition-colors hover:bg-yellow-500/25 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {state === "loading" ? "Đang rút tiền…" : `↩ Rút ${balNum.toFixed(2)} USDC → ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`}
+          {state === "loading"
+            ? "Withdrawing…"
+            : `↩ Withdraw ${balNum.toFixed(2)} USDC → ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`}
         </button>
       ) : (
         <div className="rounded border border-ink-border2 px-4 py-3 text-center">
-          <p className="font-mono text-xs text-muted">{loading ? "Đang kiểm tra số dư…" : "Không còn USDC trong agent wallet này."}</p>
+          <p className="font-mono text-xs text-muted">
+            {loading ? "Checking balance…" : "No USDC remaining in this agent wallet."}
+          </p>
         </div>
       )}
     </div>
@@ -445,36 +451,36 @@ function AgentBalanceRow({ walletAddress, isConnected, userAddress, onReclaim, s
 // ══ FAQ Data ═══════════════════════════════════════════════
 const FAQ_ITEMS = [
   {
-    q: "Ví MetaMask của tôi có bị ảnh hưởng gì không?",
-    a: "Không. Agent Wallet là ví riêng biệt hoàn toàn. Agent chỉ nhận USDC từ bạn và gửi đến địa chỉ đích đã cấu hình — không bao giờ có quyền truy cập ví MetaMask của bạn.",
+    q: "Is my MetaMask wallet at risk?",
+    a: "No. The Agent Wallet is completely separate. The agent only receives USDC from you and sends to pre-configured addresses — it never has access to your MetaMask private key.",
   },
   {
-    q: "Nếu tôi đổi máy hoặc xóa cache, tasks có bị mất không?",
-    a: "Không — từ phiên bản này, tasks được sync lên Firebase theo địa chỉ MetaMask. Chỉ cần connect lại cùng ví là tất cả tasks xuất hiện đầy đủ.",
+    q: "If I clear my browser cache or switch devices, will I lose my tasks?",
+    a: "No — tasks are now synced to Firebase by your MetaMask address. Simply reconnect the same wallet on any device and all tasks will appear.",
   },
   {
-    q: "Nếu tôi mất cả tasks lẫn file backup.json thì sao?",
-    a: "Đây là trường hợp xấu nhất. USDC vẫn còn trong Agent Wallet nhưng bạn không có token để rút. Hãy liên hệ support kèm địa chỉ MetaMask để tra cứu lịch sử tạo ví. Đây là lý do tại sao nên lưu backup.json và bật Firebase sync.",
+    q: "What if I lose both my tasks AND my backup.json?",
+    a: "This is the worst case. USDC is still in the Agent Wallet but you no longer have the token to withdraw it. Contact support with your MetaMask address so we can look up the wallet history. This is why saving backup.json and enabling Firebase sync both matter.",
   },
   {
-    q: "Tasks của tôi có bị người khác thấy không?",
-    a: "Không. Mỗi người dùng chỉ thấy tasks được tạo từ ví MetaMask của họ. Firestore lưu theo wallet_address — người khác không thể đọc data của bạn (miễn là bạn không chia sẻ private key).",
+    q: "Can other users see my tasks?",
+    a: "No. Each user only sees tasks created from their own MetaMask address. Firestore stores data by wallet_address — no one else can read your data.",
   },
   {
-    q: "DCW (Developer Controlled Wallet) là gì?",
-    a: "Là ví EVM do Circle tạo và quản lý dưới Circle account của developer ứng dụng. Khác với MetaMask (user-controlled), DCW không cần private key từ phía bạn. Developer có thể lập trình ví này thực hiện giao dịch theo policy định sẵn.",
+    q: "What is a DCW (Developer Controlled Wallet)?",
+    a: "A Circle-managed EVM wallet created under the developer's Circle account. Unlike MetaMask (user-controlled), a DCW doesn't need a private key from you. The developer programs it to execute transactions within a predefined policy.",
   },
   {
-    q: "Sau khi task hoàn thành hoặc bị cancel, tiền còn lại ở đâu?",
-    a: "USDC vẫn nằm trong Agent Wallet cho đến khi bạn chủ động rút. Khi cancel, popup Reclaim Funds sẽ xuất hiện tự động. Nếu bỏ qua, bạn có thể dùng widget Manual Withdraw trên trang này bất cứ lúc nào.",
+    q: "After a task is completed or canceled, where do leftover funds go?",
+    a: "USDC stays in the Agent Wallet until you actively withdraw it. When you cancel, the Reclaim Funds popup appears automatically. If you skip it, you can use the Manual Withdraw widget on this page at any time.",
   },
   {
-    q: "Có mất phí không?",
-    a: "Không. Tất cả giao dịch đều gasless nhờ Circle Paymaster. Bạn chỉ cần có USDC trong Agent Wallet cho phần giá trị giao dịch thực tế.",
+    q: "Are there any fees?",
+    a: "No fees. All transactions are gasless thanks to Circle Paymaster. You only need USDC in the Agent Wallet for the actual transaction value.",
   },
   {
-    q: "Agent chạy khi tôi tắt máy không?",
-    a: "Có. Agent runner chạy trên server của Bento, không phải trên máy bạn. Miễn task đang Active và Agent Wallet còn tiền, nó sẽ thực thi đúng lịch.",
+    q: "Does the agent run when my computer is off?",
+    a: "Yes. The agent runner runs on Bento's server, not your machine. As long as the task is Active and the Agent Wallet has funds, it executes on schedule.",
   },
 ];
 
@@ -513,7 +519,7 @@ function SectionHeader({ num, title }: { num: string; title: string }) {
 
 function FlowBox({ label, sub, color }: { label: string; sub: string; color: "blue"|"red"|"green" }) {
   const borderColor = { blue: "border-blue-500/40", red: "border-red-primary/40", green: "border-success/40" }[color];
-  const textColor   = { blue: "text-blue-400", red: "text-red-primary", green: "text-success" }[color];
+  const textColor   = { blue: "text-blue-400",      red: "text-red-primary",      green: "text-success"     }[color];
   return (
     <div className={`flex flex-1 flex-col items-center justify-center rounded-card border ${borderColor} bg-ink-surface2 px-4 py-3 text-center`}>
       <span className={`font-mono text-xs font-semibold ${textColor}`}>{label}</span>
@@ -574,9 +580,9 @@ function SecurityCard({ icon, title, body }: { icon: string; title: string; body
 
 function Callout({ type, text }: { type: "tip"|"warning"|"info"; text: string }) {
   const styles = {
-    tip:     { border: "border-success/30",       bg: "bg-success/5",       icon: "✓", color: "text-success" },
-    warning: { border: "border-yellow-500/30",    bg: "bg-yellow-500/5",    icon: "⚠", color: "text-yellow-400" },
-    info:    { border: "border-blue-500/30",      bg: "bg-blue-500/5",      icon: "ℹ", color: "text-blue-400" },
+    tip:     { border: "border-success/30",    bg: "bg-success/5",    icon: "✓", color: "text-success"     },
+    warning: { border: "border-yellow-500/30", bg: "bg-yellow-500/5", icon: "⚠", color: "text-yellow-400"  },
+    info:    { border: "border-blue-500/30",   bg: "bg-blue-500/5",   icon: "ℹ", color: "text-blue-400"    },
   }[type];
   return (
     <div className={`flex items-start gap-3 rounded-card border ${styles.border} ${styles.bg} px-4 py-3`}>

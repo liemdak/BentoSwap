@@ -236,7 +236,7 @@ function ChainRow({
           </div>
           <div className="flex gap-2">
             <button onClick={() => { onDeposit(chain.id); resetDeposit(); }}
-              className={`flex-1 rounded border py-2.5 font-mono text-xs font-medium transition-colors ${isDepositing ? "border-red-primary bg-red-bg text-red-primary" : "border-ink-border text-muted hover:text-cream-white"}`}>Deposit</button>
+              className={`flex-1 rounded border py-2.5 font-mono text-xs font-medium transition-colors ${isDepositing ? "border-[#C8A87A]/50 bg-[#C8A87A]/10 text-[#C8A87A]" : "border-ink-border text-muted hover:text-cream-white"}`}>Deposit</button>
             <button onClick={() => { onWithdraw(chain.id); resetWithdraw(); }}
               className={`flex-1 rounded border py-2.5 font-mono text-xs font-medium transition-colors ${isWithdrawing ? "border-success/60 bg-success/10 text-success" : "border-ink-border text-muted hover:text-cream-white"}`}>Withdraw</button>
           </div>
@@ -245,7 +245,7 @@ function ChainRow({
 
       {/* ── Deposit panel ── */}
       {isDepositing && (
-        <div className="mx-2 rounded-b-card border border-t-0 border-red-primary/30 bg-red-bg p-3">
+        <div className="mx-2 rounded-b-card border border-t-0 border-[#C8A87A]/20 bg-ink-surface2 p-3">
           <button
             onClick={() => onDeposit(chain.id)}
             className="float-right -mt-0.5 -mr-0.5 flex h-5 w-5 items-center justify-center rounded text-muted hover:text-cream-white transition-colors"
@@ -273,7 +273,7 @@ function ChainRow({
               <div className="flex items-center gap-2">
                 <input type="number" value={depositAmt} onChange={e => setDepositAmt(e.target.value)}
                   placeholder="Amount" disabled={depState === "loading"}
-                  className="min-w-0 flex-1 rounded border border-red-primary/30 bg-black px-3 py-2.5 font-mono text-sm text-cream-white placeholder:text-muted focus:outline-none disabled:opacity-50" />
+                  className="min-w-0 flex-1 rounded border border-ink-border2 bg-black px-3 py-2.5 font-mono text-sm text-cream-white placeholder:text-muted focus:outline-none disabled:opacity-50" />
                 <span className="flex-shrink-0 font-mono text-xs text-muted">USDC</span>
                 <button onClick={handleDeposit} disabled={depState === "loading" || !depositAmt || parseFloat(depositAmt) <= 0}
                   className="flex-shrink-0 rounded-lg bg-red-primary px-4 py-2.5 font-mono text-xs text-white transition-colors hover:bg-red-dim disabled:cursor-not-allowed disabled:opacity-50">
@@ -505,13 +505,20 @@ export default function BalanceDashboard() {
 
       {/* ══ PER-CHAIN BREAKDOWN ════════════════════════════════ */}
       <div className="rounded-card2 border border-ink-border bg-ink-surface p-4 shadow-card sm:p-5">
-        <div className="mb-3 flex items-center justify-between">
+        {/* Header row */}
+        <div className="mb-3 flex items-center gap-3">
           <span className="font-mono text-xs tracking-widest text-muted">{"// PER-CHAIN"}</span>
-          <div className="hidden gap-6 font-mono text-[10px] text-muted sm:flex">
-            <span className="flex items-center gap-1">
-              <CircleLogo size={10} /> Gateway
-            </span>
-            <span>Wallet</span>
+          {/* Column labels — aligned with data columns in ChainRow */}
+          <div className="ml-auto hidden items-center gap-3 sm:flex">
+            <div className="flex flex-1 items-center justify-end gap-6 font-mono text-[10px] text-muted">
+              <span className="flex w-20 items-center justify-end gap-1">
+                <CircleLogo size={9} />
+                <span>Gateway</span>
+              </span>
+              <span className="w-20 text-right">Wallet</span>
+            </div>
+            {/* Spacer matching the button area width */}
+            <div className="w-[116px]" />
           </div>
         </div>
 
@@ -655,16 +662,15 @@ function CircleLogo({ size = 24 }: { size?: number }) {
   );
 }
 
-function ActionBtn({ active, color, onClick, children }: {
-  active: boolean; color: "red" | "green"; onClick: () => void; children: React.ReactNode;
+function ActionBtn({ active, onClick, children }: {
+  active: boolean; color?: "red" | "green"; onClick: () => void; children: React.ReactNode;
 }) {
-  const activeClass = color === "red"
-    ? "border-red-primary bg-red-bg text-red-primary"
-    : "border-success/60 bg-success/10 text-success";
   return (
     <button onClick={onClick}
       className={`rounded border px-2.5 py-1 font-mono text-[11px] transition-colors ${
-        active ? activeClass : "border-ink-border text-muted hover:text-cream-white"
+        active
+          ? "border-[#C8A87A]/50 bg-[#C8A87A]/10 text-[#C8A87A]"
+          : "border-ink-border text-muted hover:text-cream-white"
       }`}>
       {children}
     </button>
