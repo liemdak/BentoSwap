@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { createPublicClient, http, erc20Abi, formatUnits } from "viem";
 import { useWallet } from "@/context/WalletContext";
 import { ARC_CHAIN_ID } from "@/lib/chains";
 import { useChainUsdcBalance } from "@/hooks/useChainUsdcBalance";
@@ -30,6 +31,46 @@ const CHAIN_IMG: Record<string, string> = {
   avax: "/chains/Avalanche%20Fuji.png",
   uni:  "/chains/Unichain%20Sepolia.jpg",
 };
+
+// ── Hook: sum wallet balance across all chains in parallel ──
+function useAllWalletBalance(walletAddress: string | null) {
+  const [total,   setTotal]   = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const fetch = useCallback(async () => {
+    if (!walletAddress) { setTotal(0); return; }
+    setLoading(true);
+    try {
+      const results = await Promise.allSettled(
+        CHAINS.map(async (chain) => {
+          const client = createPublicClient({
+            transport: http(chain.rpc, { timeout: 8_000 }),
+          });
+          const raw = await client.readContract({
+            address:      chain.usdc as `0x${string}`,
+            abi:          erc20Abi,
+            functionName: "balanceOf",
+            args:         [walletAddress as `0x${string}`],
+          });
+          return parseFloat(formatUnits(raw as bigint, 6));
+        })
+      );
+      const sum = results.reduce((acc, r) =>
+        acc + (r.status === "fulfilled" ? r.value : 0), 0
+      );
+      setTotal(sum);
+    } catch { /* keep last value */ }
+    finally { setLoading(false); }
+  }, [walletAddress]);
+
+  useEffect(() => {
+    fetch();
+    const id = setInterval(fetch, 5_000);
+    return () => clearInterval(id);
+  }, [fetch]);
+
+  return { total, loading };
+}
 
 function ChainIcon({ id, size = 24 }: { id: string; size?: number }) {
   const src = CHAIN_IMG[id];
@@ -343,79 +384,140 @@ export default function BalanceDashboard() {
   const handleDeposit  = (id: string) => { setDepositChain(depositChain  === id ? null : id); setWithdrawChain(null); };
   const handleWithdraw = (id: string) => { setWithdrawChain(withdrawChain === id ? null : id); setDepositChain(null); };
 
-  // Gateway balance from Circle API — requires adapter (not just address)
+  // Gateway balance (Circle API)
   const { data: gateway, loading: gwLoading } = useGatewayBalance(
     isConnected ? address : null,
     isConnected ? adapter : null,
   );
-
   const gwTotal   = gateway?.totalConfirmed ?? 0;
   const gwPending = gateway?.totalPending   ?? 0;
+
+  // Total wallet balance across all chains
+  const { total: walletTotal, loading: walletLoading } = useAllWalletBalance(
+    isConnected ? address : null,
+  );
+
+  const grandTotal = walletTotal + gwTotal;
+  const isLoading  = (gwLoading || walletLoading) && grandTotal === 0;
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4">
 
-      {/* ── Header: Gateway + Wallet cards ─────────────────── */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {/* ══ HERO — Total Unified Balance ═══════════════════════ */}
+      <div className="overflow-hidden rounded-card2 border border-ink-border bg-ink-surface shadow-card">
+        {/* Rainbow top bar */}
+        <div className="h-1 w-full bg-gradient-to-r from-red-primary via-yellow-400 to-success" />
 
-        {/* Gateway Balance */}
-        <div className="overflow-hidden rounded-card2 border border-ink-border bg-ink-surface shadow-card">
-          <div className="h-1 w-full bg-gradient-to-r from-red-primary via-yellow-400 to-success" />
-          <div className="p-4 sm:p-5">
-            <div className="mb-3 flex items-center gap-2">
-              <CircleLogo />
-              <span className="font-mono text-[10px] tracking-widest text-muted">CIRCLE GATEWAY</span>
-            </div>
-            <div className="font-mono text-3xl font-bold text-cream-white sm:text-4xl">
-              {!isConnected ? (
-                <span className="text-muted">$—</span>
-              ) : gwLoading && gwTotal === 0 ? (
-                <span className="animate-pulse text-muted">$—</span>
-              ) : (
-                <AnimatedNumber value={gwTotal} />
-              )}
-              <span className="ml-1.5 text-sm font-normal text-cream-dim">USDC</span>
-            </div>
-            {gwPending > 0 && (
-              <div className="mt-1.5 flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-yellow-400" />
-                <span className="font-mono text-[10px] text-yellow-400">
-                  +${gwPending.toFixed(2)} pending
-                </span>
-              </div>
+        <div className="px-5 py-6 sm:px-7 sm:py-7">
+          {/* Label */}
+          <div className="mb-1 flex items-center gap-2">
+            <span className="font-mono text-[10px] tracking-widest text-muted">// TOTAL UNIFIED BALANCE</span>
+            {isConnected && (
+              <span className="flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                <span className="font-mono text-[9px] text-success">LIVE</span>
+              </span>
             )}
-            <p className="mt-2 font-mono text-[10px] text-muted">
-              {isConnected ? "Deposited into Circle Gateway" : "Connect wallet to view"}
-            </p>
           </div>
-        </div>
 
-        {/* How it works — compact */}
-        <div className="rounded-card2 border border-ink-border bg-ink-surface p-4 sm:p-5">
-          <div className="mb-3 font-mono text-[10px] tracking-widest text-muted">{"// HOW IT WORKS"}</div>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { step: "01", label: "Deposit",   desc: "Wallet → Gateway" },
-              { step: "02", label: "Aggregate", desc: "Pooled cross-chain" },
-              { step: "03", label: "Spend",     desc: "Pay on any chain"  },
-              { step: "04", label: "Withdraw",  desc: "Back to wallet"    },
-            ].map(({ step, label, desc }) => (
-              <div key={step} className="rounded-card border border-ink-border bg-ink-surface2 p-2.5">
-                <div className="font-mono text-[10px] text-red-primary">{step}</div>
-                <div className="font-mono text-xs font-medium text-cream-white">{label}</div>
-                <div className="font-body text-[10px] text-muted">{desc}</div>
-              </div>
-            ))}
+          {/* Big number */}
+          <div className="font-mono text-4xl font-bold text-cream-white sm:text-5xl">
+            {!isConnected ? (
+              <span className="text-muted">$—</span>
+            ) : isLoading ? (
+              <span className="animate-pulse text-muted">$—</span>
+            ) : (
+              <AnimatedNumber value={grandTotal} />
+            )}
+            <span className="ml-2 text-base font-normal text-cream-dim">USDC</span>
           </div>
+
+          {gwPending > 0 && (
+            <div className="mt-1.5 flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-yellow-400" />
+              <span className="font-mono text-[10px] text-yellow-400">
+                +${gwPending.toFixed(2)} pending in gateway
+              </span>
+            </div>
+          )}
+
+          {/* Breakdown: Wallets vs Gateway */}
+          {isConnected && (
+            <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-ink-border pt-4">
+              {/* Wallet total */}
+              <div className="flex items-center gap-2 rounded-card border border-ink-border2 bg-ink-surface2 px-3 py-2">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                  <rect x="2" y="5" width="16" height="12" rx="2" stroke="#8A7E6A" strokeWidth="1.5"/>
+                  <path d="M14 11a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" fill="#8A7E6A"/>
+                  <path d="M2 8h16" stroke="#8A7E6A" strokeWidth="1.5"/>
+                </svg>
+                <div>
+                  <p className="font-mono text-[9px] text-muted">Wallets</p>
+                  <p className="font-mono text-xs font-medium text-cream-white">
+                    {walletLoading && walletTotal === 0
+                      ? <span className="animate-pulse text-muted">—</span>
+                      : `$${walletTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    }
+                  </p>
+                </div>
+              </div>
+
+              <span className="font-mono text-xs text-muted">+</span>
+
+              {/* Gateway total */}
+              <div className="flex items-center gap-2 rounded-card border border-ink-border2 bg-ink-surface2 px-3 py-2">
+                <CircleLogo size={14} />
+                <div>
+                  <p className="font-mono text-[9px] text-muted">Circle Gateway</p>
+                  <p className="font-mono text-xs font-medium text-cream-white">
+                    {gwLoading && gwTotal === 0
+                      ? <span className="animate-pulse text-muted">—</span>
+                      : `$${gwTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    }
+                  </p>
+                </div>
+              </div>
+
+              <span className="ml-auto font-mono text-[10px] text-muted">8 chains</span>
+            </div>
+          )}
+
+          {!isConnected && (
+            <p className="mt-3 font-mono text-[11px] text-muted">Connect wallet to view your unified balance</p>
+          )}
         </div>
       </div>
 
-      {/* ── Per-chain breakdown ───────────────────────────── */}
+      {/* ══ HOW IT WORKS — compact horizontal ══════════════════ */}
+      <div className="rounded-card2 border border-ink-border bg-ink-surface px-4 py-3 sm:px-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[10px] tracking-widest text-muted mr-2">// HOW IT WORKS</span>
+          {[
+            { step: "01", label: "Deposit",   desc: "Wallet → Gateway" },
+            { step: "02", label: "Aggregate", desc: "Pooled cross-chain" },
+            { step: "03", label: "Spend",     desc: "Any chain" },
+            { step: "04", label: "Withdraw",  desc: "Back to wallet" },
+          ].map(({ step, label, desc }, i) => (
+            <div key={step} className="flex items-center gap-1.5">
+              {i > 0 && <span className="font-mono text-[10px] text-ink-border2">→</span>}
+              <div className="flex items-center gap-1.5 rounded border border-ink-border2 bg-ink-surface2 px-2.5 py-1.5">
+                <span className="font-mono text-[9px] text-red-primary">{step}</span>
+                <span className="font-mono text-[11px] font-medium text-cream-white">{label}</span>
+                <span className="hidden font-mono text-[9px] text-muted sm:inline">· {desc}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ══ PER-CHAIN BREAKDOWN ════════════════════════════════ */}
       <div className="rounded-card2 border border-ink-border bg-ink-surface p-4 shadow-card sm:p-5">
         <div className="mb-3 flex items-center justify-between">
           <span className="font-mono text-xs tracking-widest text-muted">{"// PER-CHAIN"}</span>
           <div className="hidden gap-6 font-mono text-[10px] text-muted sm:flex">
-            <span>Gateway</span>
+            <span className="flex items-center gap-1">
+              <CircleLogo size={10} /> Gateway
+            </span>
             <span>Wallet</span>
           </div>
         </div>
