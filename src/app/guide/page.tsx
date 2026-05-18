@@ -268,7 +268,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Does the agent run when my computer is off?",
-    a: "Yes. The agent runner runs on Bento's server, not your machine. As long as the task is Active and the Agent Wallet has funds, it executes on schedule.",
+    a: "No — this is a testnet demo. The agent runner executes inside your browser tab. If you close the tab, execution pauses. Your task config and history are saved to Firebase, so everything resumes the next time you open the app. This limitation will be replaced by a server-side scheduler in the mainnet version.",
   },
 ];
 

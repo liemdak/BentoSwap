@@ -781,6 +781,9 @@ export default function AgentPanel() {
                 <p className="mt-2.5 text-center font-mono text-[10px] text-muted">
                   1 EIP-712 signature · No gas required · Cancel anytime
                 </p>
+                <p className="mt-1 text-center font-mono text-[10px] text-muted/50">
+                  ⚠ Testnet demo — agent runs while this tab is open. Task config is saved to Firebase and resumes on next visit.
+                </p>
               </div>
             )}
           </div>
