@@ -146,11 +146,9 @@ export default function BridgeCard() {
       const sdkSteps = (result as { steps?: { name: string; state: string; txHash?: string; explorerUrl?: string }[] }).steps ?? [];
       const visible = sdkSteps.filter(s => s.state !== "noop");
 
-      // Bridge succeeded (no exception thrown) → force ALL steps to "done"
-      // SDK may return intermediate "error" states for retried steps — ignore them
       const mapped: StepResult[] = visible.map(sdk => ({
         name:        formatStepName(sdk.name),
-        state:       "done" as const,
+        state:       sdk.state === "success" ? "done" : sdk.state === "error" ? "error" : "done",
         txHash:      sdk.txHash,
         explorerUrl: sdk.explorerUrl
           ?? (sdk.txHash ? stepExplorerUrl(sdk.name, sdk.txHash) : undefined),

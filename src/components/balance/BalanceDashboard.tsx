@@ -131,6 +131,25 @@ function ChainRow({
   const isDepositing  = depositChain  === chain.id;
   const isWithdrawing = withdrawChain === chain.id;
 
+  // Auto-close panels 2.5s after success
+  useEffect(() => {
+    if (depState !== "done") return;
+    const tid = setTimeout(() => {
+      onDeposit(chain.id);
+      setDepState("idle"); setDepResult(null); setDepErr(""); setDepositAmt("");
+    }, 2500);
+    return () => clearTimeout(tid);
+  }, [depState]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (withState !== "done" || !withResult) return;
+    const tid = setTimeout(() => {
+      onWithdraw(chain.id);
+      setWithState("idle"); setWithResult(null); setWithErr(""); setWithdrawAmt(""); setWithPending(null);
+    }, 2500);
+    return () => clearTimeout(tid);
+  }, [withState, withResult]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Gateway balance for this chain (match by chain name)
   const gwChain = gatewayChains.find(g =>
     g.chain.toLowerCase().includes(chain.id) ||
@@ -505,21 +524,9 @@ export default function BalanceDashboard() {
 
       {/* ══ PER-CHAIN BREAKDOWN ════════════════════════════════ */}
       <div className="rounded-card2 border border-ink-border bg-ink-surface p-4 shadow-card sm:p-5">
-        {/* Header row */}
-        <div className="mb-3 flex items-center gap-3">
+        {/* Section title */}
+        <div className="mb-1 flex items-center">
           <span className="font-mono text-xs tracking-widest text-muted">{"// PER-CHAIN"}</span>
-          {/* Column labels — aligned with data columns in ChainRow */}
-          <div className="ml-auto hidden items-center gap-3 sm:flex">
-            <div className="flex flex-1 items-center justify-end gap-6 font-mono text-[10px] text-muted">
-              <span className="flex w-20 items-center justify-end gap-1">
-                <CircleLogo size={9} />
-                <span>Gateway</span>
-              </span>
-              <span className="w-20 text-right">Wallet</span>
-            </div>
-            {/* Spacer matching the button area width */}
-            <div className="w-[116px]" />
-          </div>
         </div>
 
         {!isConnected ? (
@@ -538,6 +545,23 @@ export default function BalanceDashboard() {
               </div>
             )}
             <div className="space-y-2">
+              {/* Column header — px-3 matches ChainRow's internal card padding */}
+              <div className="hidden items-center gap-3 px-3 pb-0.5 sm:flex">
+                <div className="w-[26px] flex-shrink-0" />
+                <span className="w-14" />
+                <div className="flex flex-1 items-center justify-end gap-6 font-mono text-[10px] text-muted">
+                  <span className="flex w-20 items-center justify-end gap-1">
+                    <CircleLogo size={9} /> Gateway
+                  </span>
+                  <span className="w-20 text-right">Wallet</span>
+                </div>
+                {/* Invisible ghost buttons — exact same size as real buttons for alignment */}
+                <div className="invisible flex gap-1.5" aria-hidden="true">
+                  <span className="rounded border px-2.5 py-1 font-mono text-[11px]">Deposit</span>
+                  <span className="rounded border px-2.5 py-1 font-mono text-[11px]">Withdraw</span>
+                </div>
+              </div>
+
               {CHAINS.map((chain, i) => (
                 <div key={chain.id}
                   className="animate-fadeIn"
