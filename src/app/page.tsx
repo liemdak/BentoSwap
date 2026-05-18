@@ -62,12 +62,7 @@ const FOOTER_LINKS = {
 export default function HomePage() {
   return (
     <>
-      {/* ── Bubbles — full-page background layer, behind all cards ── */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden" style={{ zIndex: 0 }}>
-        <Bubbles />
-      </div>
-
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6" style={{ zIndex: 1 }}>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
 
         {/* ═══ HERO ════════════════════════════════════════════ */}
         <section className="relative flex flex-col items-center py-16 text-center sm:py-24 overflow-hidden">
@@ -172,8 +167,7 @@ export default function HomePage() {
       </div>
 
       {/* ═══ FOOTER ══════════════════════════════════════════ */}
-      <footer className="relative z-[1] border-t border-[#C8A87A]/40 bg-[rgba(245,240,232,0.85)] backdrop-blur-sm overflow-hidden">
-        <Bubbles />
+      <footer className="relative border-t border-[#C8A87A]/40 bg-[rgba(245,240,232,0.85)] backdrop-blur-sm overflow-hidden">
         {/* Main footer grid */}
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
@@ -289,45 +283,6 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-    </>
-  );
-}
-
-// ── Bubbles ───────────────────────────────────────────────
-const BUBBLE_CONFIG = [
-  { size: 8,  left: "4%",  delay: "0s",    dur: "14s" },
-  { size: 12, left: "9%",  delay: "5s",    dur: "18s" },
-  { size: 6,  left: "15%", delay: "2s",    dur: "13s" },
-  { size: 10, left: "22%", delay: "8s",    dur: "16s" },
-  { size: 7,  left: "29%", delay: "1s",    dur: "15s" },
-  { size: 14, left: "36%", delay: "6s",    dur: "19s" },
-  { size: 8,  left: "43%", delay: "3s",    dur: "14s" },
-  { size: 11, left: "50%", delay: "10s",   dur: "17s" },
-  { size: 6,  left: "57%", delay: "4s",    dur: "13s" },
-  { size: 13, left: "64%", delay: "7s",    dur: "18s" },
-  { size: 8,  left: "71%", delay: "0.5s",  dur: "15s" },
-  { size: 10, left: "78%", delay: "9s",    dur: "16s" },
-  { size: 7,  left: "85%", delay: "2.5s",  dur: "14s" },
-  { size: 12, left: "91%", delay: "6.5s",  dur: "17s" },
-  { size: 6,  left: "96%", delay: "4.5s",  dur: "13s" },
-];
-
-function Bubbles() {
-  return (
-    <>
-      {BUBBLE_CONFIG.map((b, i) => (
-        <span
-          key={i}
-          className="bubble"
-          style={{
-            width:  b.size,
-            height: b.size,
-            left:   b.left,
-            animationDelay:    b.delay,
-            animationDuration: b.dur,
-          }}
-        />
-      ))}
     </>
   );
 }
