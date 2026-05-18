@@ -25,6 +25,8 @@ interface WalletState {
   connect: (walletId: string) => Promise<void>;
   disconnect: () => void;
   switchToArc: () => Promise<void>;
+  switchToChain: (chainId: number, chainName?: string, rpcUrl?: string) => Promise<void>;
+  signMessage: (message: string) => Promise<string>;
 }
 
 // ── Context ────────────────────────────────────────────────
@@ -47,6 +49,46 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [rawProvider,  setRawProvider]  = useState<unknown>(null);
 
   const isConnected = Boolean(address);
+
+  // ── Sign message via EIP-191 (personal_sign) ──────────
+  const signMessage = useCallback(async (message: string): Promise<string> => {
+    const provider = rawProvider as Record<string, (...args: unknown[]) => unknown> | null;
+    if (!provider?.request) throw new Error("Wallet not connected");
+    if (!address) throw new Error("No account connected");
+    const sig = await provider.request({
+      method: "personal_sign",
+      params: [message, address],
+    });
+    return sig as string;
+  }, [rawProvider, address]);
+
+  // ── Switch to any EVM chain ────────────────────────────
+  const switchToChain = useCallback(async (targetChainId: number, chainName?: string, rpcUrl?: string) => {
+    const provider = rawProvider as Record<string, (...args: unknown[]) => unknown> | null;
+    if (!provider?.request) return;
+    const hexId = "0x" + targetChainId.toString(16);
+    try {
+      await provider.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: hexId }],
+      });
+    } catch (err: unknown) {
+      if ((err as { code?: number }).code === 4902 && chainName && rpcUrl) {
+        await provider.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: hexId,
+            chainName,
+            rpcUrls: [rpcUrl],
+            nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+          }],
+        });
+      } else if ((err as { code?: number }).code !== 4001) {
+        // Re-throw non-rejection errors
+        throw err;
+      }
+    }
+  }, [rawProvider]);
 
   // ── Switch / add Arc Testnet ───────────────────────────
   const switchToArc = useCallback(async () => {
@@ -181,6 +223,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         connect,
         disconnect,
         switchToArc,
+        switchToChain,
+        signMessage,
       }}
     >
       {children}

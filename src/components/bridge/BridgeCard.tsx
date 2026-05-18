@@ -7,14 +7,14 @@ import { useChainUsdcBalance } from "@/hooks/useChainUsdcBalance";
 
 // ── Chain definitions ──────────────────────────────────────
 const CHAINS = [
-  { id: "arc",  name: "Arc Testnet",       short: "Arc",   color: "#C8102E", bridgeChain: "Arc_Testnet",          chainId: 5042002,   rpc: "https://rpc.testnet.arc.network",                        usdc: "0x3600000000000000000000000000000000000000", explorer: "https://testnet.arcscan.app/tx/{hash}" },
-  { id: "eth",  name: "Ethereum Sepolia",  short: "ETH",   color: "#627EEA", bridgeChain: "Ethereum_Sepolia",     chainId: 11155111,  rpc: "https://rpc.sepolia.org",                                usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", explorer: "https://sepolia.etherscan.io/tx/{hash}" },
-  { id: "base", name: "Base Sepolia",      short: "Base",  color: "#0052FF", bridgeChain: "Base_Sepolia",         chainId: 84532,     rpc: "https://sepolia.base.org",                               usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", explorer: "https://sepolia.basescan.org/tx/{hash}" },
-  { id: "arb",  name: "Arbitrum Sepolia",  short: "ARB",   color: "#12AAFF", bridgeChain: "Arbitrum_Sepolia",     chainId: 421614,    rpc: "https://sepolia-rollup.arbitrum.io/rpc",                 usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", explorer: "https://sepolia.arbiscan.io/tx/{hash}" },
-  { id: "op",   name: "Optimism Sepolia",  short: "OP",    color: "#FF0420", bridgeChain: "Optimism_Sepolia",     chainId: 11155420,  rpc: "https://sepolia.optimism.io",                            usdc: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7", explorer: "https://sepolia-optimistic.etherscan.io/tx/{hash}" },
-  { id: "poly", name: "Polygon Amoy",      short: "MATIC", color: "#8247E5", bridgeChain: "Polygon_Amoy_Testnet", chainId: 80002,     rpc: "https://rpc-amoy.polygon.technology",                    usdc: "0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582", explorer: "https://amoy.polygonscan.com/tx/{hash}" },
-  { id: "avax", name: "Avalanche Fuji",    short: "AVAX",  color: "#E84142", bridgeChain: "Avalanche_Fuji",       chainId: 43113,     rpc: "https://api.avax-test.network/ext/bc/C/rpc",             usdc: "0x5425890298aed601595a70AB815c96711a31Bc65", explorer: "https://subnets-test.avax.network/c-chain/tx/{hash}" },
-  { id: "uni",  name: "Unichain Sepolia",  short: "UNI",   color: "#FF007A", bridgeChain: "Unichain_Sepolia",     chainId: 1301,      rpc: "https://sepolia.unichain.org",                           usdc: "0x31d0220469e10c4E71834a79b1f276d740d3768F", explorer: "https://unichain-sepolia.blockscout.com/tx/{hash}" },
+  { id: "arc",  name: "Arc Testnet",       short: "Arc",   color: "#C8102E", bridgeChain: "Arc_Testnet",          chainId: 5042002,   rpc: "https://rpc.testnet.arc.network",                              usdc: "0x3600000000000000000000000000000000000000", explorer: "https://testnet.arcscan.app/tx/{hash}" },
+  { id: "eth",  name: "Ethereum Sepolia",  short: "ETH",   color: "#627EEA", bridgeChain: "Ethereum_Sepolia",     chainId: 11155111,  rpc: "https://ethereum-sepolia-rpc.publicnode.com",                  usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", explorer: "https://sepolia.etherscan.io/tx/{hash}" },
+  { id: "base", name: "Base Sepolia",      short: "Base",  color: "#0052FF", bridgeChain: "Base_Sepolia",         chainId: 84532,     rpc: "https://base-sepolia-rpc.publicnode.com",                      usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", explorer: "https://sepolia.basescan.org/tx/{hash}" },
+  { id: "arb",  name: "Arbitrum Sepolia",  short: "ARB",   color: "#12AAFF", bridgeChain: "Arbitrum_Sepolia",     chainId: 421614,    rpc: "https://arbitrum-sepolia-rpc.publicnode.com",                  usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", explorer: "https://sepolia.arbiscan.io/tx/{hash}" },
+  { id: "op",   name: "Optimism Sepolia",  short: "OP",    color: "#FF0420", bridgeChain: "Optimism_Sepolia",     chainId: 11155420,  rpc: "https://optimism-sepolia-rpc.publicnode.com",                  usdc: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7", explorer: "https://sepolia-optimistic.etherscan.io/tx/{hash}" },
+  { id: "poly", name: "Polygon Amoy",      short: "MATIC", color: "#8247E5", bridgeChain: "Polygon_Amoy_Testnet", chainId: 80002,     rpc: "https://polygon-amoy-bor-rpc.publicnode.com",                  usdc: "0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582", explorer: "https://amoy.polygonscan.com/tx/{hash}" },
+  { id: "avax", name: "Avalanche Fuji",    short: "AVAX",  color: "#E84142", bridgeChain: "Avalanche_Fuji",       chainId: 43113,     rpc: "https://avalanche-fuji-c-chain-rpc.publicnode.com",            usdc: "0x5425890298aed601595a70AB815c96711a31Bc65", explorer: "https://subnets-test.avax.network/c-chain/tx/{hash}" },
+  { id: "uni",  name: "Unichain Sepolia",  short: "UNI",   color: "#FF007A", bridgeChain: "Unichain_Sepolia",     chainId: 1301,      rpc: "https://sepolia.unichain.org",                                 usdc: "0x31d0220469e10c4E71834a79b1f276d740d3768F", explorer: "https://unichain-sepolia.blockscout.com/tx/{hash}" },
 ] as const;
 type ChainId = (typeof CHAINS)[number]["id"];
 
@@ -25,7 +25,7 @@ const BRIDGE_STATS = [
   { label: "Fee saved",     value: "$0" },
 ];
 
-type BridgeState = "idle" | "switching" | "running" | "done" | "error";
+type BridgeState = "idle" | "running" | "done" | "error";
 
 interface StepResult {
   name:        string;
@@ -43,7 +43,7 @@ const INITIAL_STEPS: StepResult[] = [
 
 // ──────────────────────────────────────────────────────────
 export default function BridgeCard() {
-  const { adapter, chainId: walletChainId, isConnected, switchToArc, address } = useWallet();
+  const { adapter, chainId: walletChainId, isConnected, switchToArc, switchToChain, address } = useWallet();
 
   const [fromChain, setFromChain] = useState<ChainId>("arc");
   const [toChain,   setToChain]   = useState<ChainId>("eth");
@@ -76,34 +76,15 @@ export default function BridgeCard() {
   const flipChains = () => { setFromChain(toChain); setToChain(fromChain); };
 
   // ── Switch wallet to FROM chain ──────────────────────────
+  const [isSwitching, setIsSwitching] = useState(false);
   const switchToFromChain = async () => {
-    const win = window as Window & { ethereum?: { request: (a: unknown) => Promise<unknown> } };
-    if (!win.ethereum) return;
-    setBridgeState("switching");
+    setIsSwitching(true);
     try {
-      const hexId = "0x" + fromDef.chainId.toString(16);
-      try {
-        await win.ethereum.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: hexId }],
-        });
-      } catch (e: unknown) {
-        if ((e as {code?: number}).code === 4902) {
-          await win.ethereum.request({
-            method: "wallet_addEthereumChain",
-            params: [{
-              chainId: hexId,
-              chainName: fromDef.name,
-              rpcUrls: [fromDef.rpc],
-              nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
-            }],
-          });
-        } else throw e;
-      }
+      await switchToChain(fromDef.chainId, fromDef.name, fromDef.rpc);
     } catch {
       setErrMsg("Failed to switch network");
     } finally {
-      setBridgeState("idle");
+      setIsSwitching(false);
     }
   };
 
@@ -189,17 +170,24 @@ export default function BridgeCard() {
             {isConnected && (
               <span className="font-mono text-[11px] text-muted">
                 {fromBalLoading && fromBalance === null ? (
-                  <span className="animate-pulse">...</span>
+                  <span className="animate-pulse">loading…</span>
                 ) : fromBalance !== null ? (
                   <span>Balance: <span className="text-cream-dim">{fromBalance} USDC</span></span>
-                ) : null}
+                ) : (
+                  <span className="text-muted/50">Balance: —</span>
+                )}
               </span>
             )}
           </div>
           <div className="flex items-center gap-3">
-            <ChainPicker value={fromChain} exclude={toChain} open={fromOpen}
+            <ChainPicker value={fromChain} open={fromOpen}
               onToggle={() => { setFromOpen(!fromOpen); setToOpen(false); }}
-              onSelect={c => { setFromChain(c); setFromOpen(false); }} />
+              onSelect={c => {
+                // If user picks the current TO chain, swap them instead of duplicating
+                if (c === toChain) setToChain(fromChain);
+                setFromChain(c);
+                setFromOpen(false);
+              }} />
             <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
               placeholder="0.00" disabled={bridgeState === "running"}
               className="min-w-0 flex-1 bg-transparent font-mono text-2xl text-cream-white placeholder:text-ink-border2 focus:outline-none text-right disabled:opacity-50" />
@@ -237,17 +225,23 @@ export default function BridgeCard() {
             {isConnected && (
               <span className="font-mono text-[11px] text-muted">
                 {toBalLoading && toBalance === null ? (
-                  <span className="animate-pulse">...</span>
+                  <span className="animate-pulse">loading…</span>
                 ) : toBalance !== null ? (
                   <span>Balance: <span className="text-cream-dim">{toBalance} USDC</span></span>
-                ) : null}
+                ) : (
+                  <span className="text-muted/50">Balance: —</span>
+                )}
               </span>
             )}
           </div>
           <div className="flex items-center gap-3">
             <ChainPicker value={toChain} exclude={fromChain} open={toOpen}
               onToggle={() => { setToOpen(!toOpen); setFromOpen(false); }}
-              onSelect={c => { setToChain(c); setToOpen(false); }} />
+              onSelect={c => {
+                if (c === fromChain) setFromChain(toChain);
+                setToChain(c);
+                setToOpen(false);
+              }} />
             <div className="flex-1 text-right font-mono text-2xl text-cream-white/60">
               {amount || "0.00"}
             </div>
@@ -271,9 +265,9 @@ export default function BridgeCard() {
             <p className="font-mono text-xs text-yellow-400">
               Switch wallet to <strong>{fromDef.name}</strong> to bridge from this chain
             </p>
-            <button onClick={switchToFromChain}
-              className="mt-2 w-full rounded border border-yellow-500/40 py-2 font-mono text-xs text-yellow-400 hover:bg-yellow-500/10 transition-colors">
-              Switch to {fromDef.name}
+            <button onClick={switchToFromChain} disabled={isSwitching}
+              className="mt-2 w-full rounded border border-yellow-500/40 py-2 font-mono text-xs text-yellow-400 hover:bg-yellow-500/10 transition-colors disabled:opacity-50">
+              {isSwitching ? "Switching…" : `Switch to ${fromDef.name}`}
             </button>
           </div>
         )}
@@ -378,12 +372,6 @@ export default function BridgeCard() {
           )
         )}
 
-        {bridgeState === "switching" && (
-          <button disabled className="mt-4 w-full cursor-not-allowed rounded-lg bg-ink-border2 py-3.5 font-body text-base text-muted">
-            Switching network...
-          </button>
-        )}
-
         {bridgeState === "running" && (
           <button disabled className="mt-4 w-full cursor-not-allowed rounded-lg bg-ink-border2 py-3.5 font-body text-base text-muted">
             Bridging...
@@ -445,7 +433,7 @@ function ChainImg({ id, color, size = 22 }: { id: string; color: string; size?: 
 
 // ── Sub-components ─────────────────────────────────────────
 function ChainPicker({ value, exclude, open, onToggle, onSelect }: {
-  value: ChainId; exclude: ChainId; open: boolean;
+  value: ChainId; exclude?: ChainId; open: boolean;
   onToggle: () => void; onSelect: (c: ChainId) => void;
 }) {
   const chain = CHAINS.find(c => c.id === value)!;
@@ -461,7 +449,7 @@ function ChainPicker({ value, exclude, open, onToggle, onSelect }: {
       </button>
       {open && (
         <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-card border border-ink-border2 bg-ink-surface shadow-xl">
-          {CHAINS.filter(c => c.id !== exclude).map(c => (
+          {CHAINS.filter(c => exclude ? c.id !== exclude : true).map(c => (
             <button key={c.id} onClick={() => onSelect(c.id)}
               className={`flex w-full items-center gap-3 px-3.5 py-3 text-left font-mono text-sm transition-colors hover:bg-ink-surface2 ${
                 c.id === value ? "text-red-primary" : "text-cream-white"

@@ -62,11 +62,15 @@ const FOOTER_LINKS = {
 export default function HomePage() {
   return (
     <>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      {/* ── Bubbles — full-page background layer, behind all cards ── */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden" style={{ zIndex: 0 }}>
+        <Bubbles />
+      </div>
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6" style={{ zIndex: 1 }}>
 
         {/* ═══ HERO ════════════════════════════════════════════ */}
         <section className="relative flex flex-col items-center py-16 text-center sm:py-24 overflow-hidden">
-          <Embers />
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[rgba(200,168,122,0.45)] bg-[rgba(245,240,232,0.65)] px-4 py-1.5 backdrop-blur-sm">
             <span className="h-[7px] w-[7px] rounded-full bg-success shadow-[0_0_6px_#2D9B6F]" />
             <span className="font-mono text-xs text-page-muted">Arc Testnet · Chain ID 5042002</span>
@@ -168,7 +172,7 @@ export default function HomePage() {
       </div>
 
       {/* ═══ FOOTER ══════════════════════════════════════════ */}
-      <footer className="relative border-t border-[#C8A87A]/40 bg-[rgba(245,240,232,0.85)] backdrop-blur-sm overflow-hidden">
+      <footer className="relative z-[1] border-t border-[#C8A87A]/40 bg-[rgba(245,240,232,0.85)] backdrop-blur-sm overflow-hidden">
         <Bubbles />
         {/* Main footer grid */}
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
@@ -289,56 +293,23 @@ export default function HomePage() {
   );
 }
 
-// ── Embers — sparse floating sparks in hero background ────
-const EMBER_CONFIG = [
-  { size: 2, left: "7%",  bottom: "5%",  delay: "0s",   dur: "12s", color: "rgba(200,168,122,0.6)" },
-  { size: 3, left: "15%", bottom: "10%", delay: "3s",   dur: "15s", color: "rgba(212,149,106,0.5)" },
-  { size: 2, left: "23%", bottom: "3%",  delay: "7s",   dur: "11s", color: "rgba(232,223,192,0.55)" },
-  { size: 2, left: "34%", bottom: "8%",  delay: "1.5s", dur: "14s", color: "rgba(200,168,122,0.45)" },
-  { size: 3, left: "45%", bottom: "2%",  delay: "5s",   dur: "13s", color: "rgba(212,149,106,0.4)" },
-  { size: 2, left: "55%", bottom: "6%",  delay: "9s",   dur: "16s", color: "rgba(232,223,192,0.5)" },
-  { size: 3, left: "64%", bottom: "4%",  delay: "2s",   dur: "12s", color: "rgba(200,168,122,0.55)" },
-  { size: 2, left: "73%", bottom: "9%",  delay: "6s",   dur: "14s", color: "rgba(212,149,106,0.45)" },
-  { size: 2, left: "82%", bottom: "1%",  delay: "4s",   dur: "11s", color: "rgba(232,223,192,0.5)" },
-  { size: 3, left: "91%", bottom: "7%",  delay: "8s",   dur: "15s", color: "rgba(200,168,122,0.4)" },
-  { size: 2, left: "11%", bottom: "15%", delay: "11s",  dur: "13s", color: "rgba(212,149,106,0.35)" },
-  { size: 2, left: "50%", bottom: "12%", delay: "0.5s", dur: "17s", color: "rgba(200,168,122,0.3)" },
-  { size: 3, left: "78%", bottom: "14%", delay: "13s",  dur: "12s", color: "rgba(232,223,192,0.4)" },
-];
-
-function Embers() {
-  return (
-    <>
-      {EMBER_CONFIG.map((e, i) => (
-        <span
-          key={i}
-          className="ember"
-          style={{
-            width:  e.size,
-            height: e.size,
-            left:   e.left,
-            bottom: e.bottom,
-            backgroundColor:   e.color,
-            animationDelay:    e.delay,
-            animationDuration: e.dur,
-          }}
-        />
-      ))}
-    </>
-  );
-}
-
 // ── Bubbles ───────────────────────────────────────────────
 const BUBBLE_CONFIG = [
-  { size: 18, left: "8%",  delay: "0s",    dur: "7s"  },
-  { size: 10, left: "18%", delay: "1.5s",  dur: "9s"  },
-  { size: 24, left: "28%", delay: "3s",    dur: "8s"  },
-  { size: 12, left: "40%", delay: "0.8s",  dur: "10s" },
-  { size: 20, left: "52%", delay: "2.2s",  dur: "7.5s"},
-  { size: 8,  left: "63%", delay: "4s",    dur: "9.5s"},
-  { size: 16, left: "74%", delay: "1s",    dur: "8.5s"},
-  { size: 14, left: "85%", delay: "3.5s",  dur: "7s"  },
-  { size: 22, left: "93%", delay: "2s",    dur: "10s" },
+  { size: 8,  left: "4%",  delay: "0s",    dur: "14s" },
+  { size: 12, left: "9%",  delay: "5s",    dur: "18s" },
+  { size: 6,  left: "15%", delay: "2s",    dur: "13s" },
+  { size: 10, left: "22%", delay: "8s",    dur: "16s" },
+  { size: 7,  left: "29%", delay: "1s",    dur: "15s" },
+  { size: 14, left: "36%", delay: "6s",    dur: "19s" },
+  { size: 8,  left: "43%", delay: "3s",    dur: "14s" },
+  { size: 11, left: "50%", delay: "10s",   dur: "17s" },
+  { size: 6,  left: "57%", delay: "4s",    dur: "13s" },
+  { size: 13, left: "64%", delay: "7s",    dur: "18s" },
+  { size: 8,  left: "71%", delay: "0.5s",  dur: "15s" },
+  { size: 10, left: "78%", delay: "9s",    dur: "16s" },
+  { size: 7,  left: "85%", delay: "2.5s",  dur: "14s" },
+  { size: 12, left: "91%", delay: "6.5s",  dur: "17s" },
+  { size: 6,  left: "96%", delay: "4.5s",  dur: "13s" },
 ];
 
 function Bubbles() {

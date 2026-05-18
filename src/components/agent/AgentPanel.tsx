@@ -807,6 +807,7 @@ function ReclaimModal({ task, recipientAddress, onDone, onSkip, onClose }: {
   onSkip:           () => void;
   onClose:          () => void;
 }) {
+  const { signMessage }      = useWallet();
   const { balance, loading } = useArcUsdcBalance(task.walletAddress);
   const [state,    setState] = useState<"idle"|"loading"|"done"|"error">("idle");
   const [txUrl,    setTxUrl] = useState("");
@@ -820,14 +821,8 @@ function ReclaimModal({ task, recipientAddress, onDone, onSkip, onClose }: {
     setState("loading"); setErr("");
     try {
       // ── Step 1: ask user to sign with MetaMask (EIP-191) ──
-      const win = window as Window & { ethereum?: { request: (a: unknown) => Promise<unknown> } };
-      if (!win.ethereum) throw new Error("MetaMask not found");
-
       const message   = `Reclaim task ${task.id} funds to ${recipientAddress}`;
-      const signature = await win.ethereum.request({
-        method: "personal_sign",
-        params: [message, recipientAddress],
-      }) as string;
+      const signature = await signMessage(message);
 
       // ── Step 2: send signature to server ──────────────────
       const res  = await fetch("/api/agent/reclaim", {
