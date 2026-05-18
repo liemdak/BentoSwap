@@ -1072,13 +1072,29 @@ function DateTimePicker({ date, time, freq, onDateChange, onTimeChange }: {
       {/* Date row */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="font-mono text-[10px] text-muted w-24 flex-shrink-0">First payment</span>
-        <input
-          type="date"
-          value={date}
-          min={new Date().toISOString().split("T")[0]}
-          onChange={e => onDateChange(e.target.value)}
-          className="rounded border border-ink-border bg-black px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-red-primary/50 cursor-pointer"
-        />
+        <div className="relative flex items-center">
+          <input
+            type="text"
+            value={date}
+            placeholder="YYYY-MM-DD"
+            onChange={e => onDateChange(e.target.value)}
+            onBlur={e => {
+              // auto-format: accept DD/MM/YYYY or D-M-YYYY etc.
+              const raw = e.target.value.replace(/[^\d]/g, "");
+              if (raw.length === 8) {
+                const y = raw.slice(0,4), m = raw.slice(4,6), d = raw.slice(6,8);
+                onDateChange(`${y}-${m}-${d}`);
+              }
+            }}
+            className="w-32 rounded border border-ink-border bg-black px-2.5 py-1.5 pr-6 font-mono text-xs text-white placeholder:text-muted/50 focus:outline-none focus:border-red-primary/50"
+          />
+          {date && (
+            <button onClick={() => onDateChange("")}
+              className="absolute right-1.5 text-muted hover:text-cream-white transition-colors font-mono text-[10px]">
+              ✕
+            </button>
+          )}
+        </div>
         {/* Presets */}
         <div className="flex gap-1">
           {presets.map(p => (
@@ -1093,12 +1109,26 @@ function DateTimePicker({ date, time, freq, onDateChange, onTimeChange }: {
       {/* Time row */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="font-mono text-[10px] text-muted w-24 flex-shrink-0">Time</span>
-        <input
-          type="time"
-          value={time}
-          onChange={e => onTimeChange(e.target.value)}
-          className="rounded border border-ink-border bg-black px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-red-primary/50"
-        />
+        <div className="relative flex items-center">
+          <input
+            type="text"
+            value={time}
+            placeholder="HH:MM"
+            onChange={e => onTimeChange(e.target.value)}
+            onBlur={e => {
+              // auto-format: accept HHMM → HH:MM
+              const raw = e.target.value.replace(/[^\d]/g, "");
+              if (raw.length === 4) onTimeChange(`${raw.slice(0,2)}:${raw.slice(2,4)}`);
+            }}
+            className="w-20 rounded border border-ink-border bg-black px-2.5 py-1.5 pr-6 font-mono text-xs text-white placeholder:text-muted/50 focus:outline-none focus:border-red-primary/50"
+          />
+          {time && (
+            <button onClick={() => onTimeChange("")}
+              className="absolute right-1.5 text-muted hover:text-cream-white transition-colors font-mono text-[10px]">
+              ✕
+            </button>
+          )}
+        </div>
         {/* Quick time presets */}
         <div className="flex gap-1">
           {["09:00","12:00","18:00"].map(t => (
