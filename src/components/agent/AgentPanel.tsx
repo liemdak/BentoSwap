@@ -108,7 +108,7 @@ export default function AgentPanel() {
   const [tasks,        setTasks]        = useState<AgentTask[]>([]);
   const [modal,        setModal]        = useState<AgentMode | null>(null);
   const [deploying,    setDeploying]    = useState(false);
-  const [deployedInfo, setDeployedInfo] = useState<{ address: string; label: string; exportData?: string } | null>(null);
+  const [deployedInfo, setDeployedInfo] = useState<{ address: string; label: string } | null>(null);
 
   // Reclaim modal — shown when Cancel is clicked on a task that has balance
   const [reclaimTask,  setReclaimTask]  = useState<AgentTask | null>(null);
@@ -296,15 +296,8 @@ export default function AgentPanel() {
       setTasks(allTasks as AgentTask[]);
       if (userAddress) saveTasksToFirestore(userAddress, allTasks);
 
-      // Build backup JSON for export
-      const exportData = JSON.stringify({
-        version:    "1.0",
-        exportedAt: new Date().toISOString(),
-        tasks:      [storedTask],
-      }, null, 2);
-
       // Show success state with wallet address + ArcScan link
-      setDeployedInfo({ address: data.address ?? "", label: MAP[modal!].label, exportData });
+      setDeployedInfo({ address: data.address ?? "", label: MAP[modal!].label });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -571,33 +564,6 @@ export default function AgentPanel() {
                         )}
                       </div>
 
-                      {/* Export backup JSON */}
-                      {deployedInfo.exportData && (
-                        <div className="rounded border border-ink-border2 bg-ink-surface2 p-3 space-y-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] text-cream-dim">💾 Save backup file</span>
-                            <span className="font-mono text-[9px] text-muted">— needed to reclaim funds if tasks are lost</span>
-                          </div>
-                          <button
-                            onClick={() => {
-                              const blob = new Blob([deployedInfo.exportData!], { type: "application/json" });
-                              const url  = URL.createObjectURL(blob);
-                              const a    = document.createElement("a");
-                              a.href     = url;
-                              a.download = `bento-agent-backup-${Date.now()}.json`;
-                              a.click();
-                              URL.revokeObjectURL(url);
-                            }}
-                            className="flex w-full items-center justify-center gap-2 rounded border border-ink-border2 py-2 font-mono text-[11px] text-cream-dim transition-colors hover:border-cream-dim/40 hover:text-cream-white"
-                          >
-                            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                              <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M2 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-                            </svg>
-                            Download backup.json
-                          </button>
-                        </div>
-                      )}
 
                       {/* Notes */}
                       <div className="space-y-1 border-t border-ink-border pt-2">

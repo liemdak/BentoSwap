@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useWallet } from "@/context/WalletContext";
-import { useArcUsdcBalance } from "@/hooks/useTokenBalance";
-import type { StoredTask } from "@/lib/agentTasks";
 
 // ── Sidebar sections ──────────────────────────────────────
 const SECTIONS = [
@@ -198,31 +196,27 @@ export default function GuidePage() {
               <SectionHeader num="05" title="Reclaim Funds" />
               <div className="space-y-5">
                 <p className="font-body text-sm leading-relaxed text-muted">
-                  When you cancel a task, any USDC remaining in the Agent Wallet needs to be withdrawn back to your MetaMask. There are 2 ways:
+                  When you cancel a task, any USDC remaining in the Agent Wallet is sent back to your MetaMask automatically.
                 </p>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-card border border-success/30 bg-success/5 p-4 space-y-2">
-                    <div className="font-mono text-[10px] tracking-widest text-success">METHOD 1 — AUTOMATIC</div>
-                    <p className="font-mono text-xs text-cream-dim leading-relaxed">
-                      Click <strong>Cancel</strong> in the task list → balance popup appears → click <strong>Reclaim & Cancel</strong> → MetaMask will ask you to sign a message → funds sent back immediately.
-                    </p>
-                    <div className="flex items-center gap-2 rounded border border-success/20 bg-success/10 px-3 py-2">
-                      <span className="font-mono text-[9px] text-success">✓ Recommended · no token needed · just your wallet signature</span>
+                <div className="rounded-card border border-success/30 bg-success/5 p-5 space-y-3">
+                  <div className="font-mono text-[10px] tracking-widest text-success">HOW TO RECLAIM</div>
+                  {[
+                    "Click Cancel on any active task in the Agent panel",
+                    "A popup shows the remaining USDC balance in the Agent Wallet",
+                    'Click "Reclaim & Cancel" — MetaMask will ask you to sign a message',
+                    "The server verifies your signature and transfers all USDC back to your wallet",
+                    "No token, no secret file — just your MetaMask signature",
+                  ].map((s, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-success/20 font-mono text-[10px] font-bold text-success">{i + 1}</span>
+                      <span className="font-mono text-xs text-cream-dim leading-relaxed">{s}</span>
                     </div>
-                  </div>
-                  <div className="rounded-card border border-ink-border2 bg-ink-surface2 p-4 space-y-2">
-                    <div className="font-mono text-[10px] tracking-widest text-cream-dim">METHOD 2 — MANUAL RECOVERY</div>
-                    <p className="font-mono text-xs text-muted leading-relaxed">
-                      If tasks are missing from Firebase (e.g. Firebase was not configured), upload your <strong className="text-cream-dim">backup.json</strong> below. The file provides the Agent Wallet address — your MetaMask signature still authorizes the withdrawal.
-                    </p>
-                  </div>
+                  ))}
                 </div>
 
-                <Callout type="info" text="Tasks are automatically synced to Firebase by your MetaMask address. Switching devices or clearing cache will NOT lose your tasks as long as Firebase is configured. backup.json is a last-resort fallback only." />
-
-                {/* Manual Withdraw Widget */}
-                <ManualWithdrawWidget />
+                <Callout type="info" text="Tasks are synced to Firebase by your MetaMask address. Clearing cache or switching devices will NOT lose your tasks — just reconnect the same wallet." />
+                <Callout type="warning" text="If you lose access to your MetaMask wallet (lost private key / seed phrase), funds in the Agent Wallet cannot be recovered. Always keep your seed phrase safe." />
               </div>
             </section>
 
@@ -243,225 +237,6 @@ export default function GuidePage() {
   );
 }
 
-// ══ Manual Withdraw Widget ══════════════════════════════════
-function ManualWithdrawWidget() {
-  const { address: userAddress, isConnected } = useWallet();
-  const [file,       setFile]       = useState<File | null>(null);
-  const [tasks,      setTasks]      = useState<StoredTask[]>([]);
-  const [parseErr,   setParseErr]   = useState("");
-  const [selected,   setSelected]   = useState<StoredTask | null>(null);
-  const [state,      setState]      = useState<"idle"|"loading"|"done"|"error">("idle");
-  const [txUrl,      setTxUrl]      = useState("");
-  const [reclaimErr, setReclaimErr] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const handleFile = async (f: File) => {
-    setFile(f); setParseErr(""); setTasks([]); setSelected(null);
-    try {
-      const text = await f.text();
-      const json = JSON.parse(text) as { tasks?: StoredTask[] };
-      if (!Array.isArray(json.tasks) || json.tasks.length === 0) {
-        throw new Error("No tasks found in this file");
-      }
-      setTasks(json.tasks);
-      if (json.tasks.length === 1) setSelected(json.tasks[0]);
-    } catch (e: unknown) {
-      setParseErr((e as Error).message ?? "Invalid backup file");
-    }
-  };
-
-  const handleReclaim = async () => {
-    if (!selected || !userAddress) return;
-    setState("loading"); setReclaimErr("");
-    try {
-      // ── Step 1: sign with MetaMask (EIP-191) ──────────────
-      const win = window as Window & { ethereum?: { request: (a: unknown) => Promise<unknown> } };
-      if (!win.ethereum) throw new Error("MetaMask not found");
-
-      const message   = `Reclaim task ${selected.id} funds to ${userAddress}`;
-      const signature = await win.ethereum.request({
-        method: "personal_sign",
-        params: [message, userAddress],
-      }) as string;
-
-      // ── Step 2: send to server ─────────────────────────────
-      const res  = await fetch("/api/agent/reclaim", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({
-          walletId:         selected.id,
-          walletAddress:    selected.walletAddress,
-          recipientAddress: userAddress,
-          message,
-          signature,
-        }),
-      });
-      const data = await res.json() as { explorerUrl?: string; error?: string };
-      if (!res.ok) throw new Error(data.error ?? "Reclaim failed");
-      setTxUrl(data.explorerUrl ?? "");
-      setState("done");
-    } catch (e: unknown) {
-      setReclaimErr((e as Error).message ?? "Reclaim failed");
-      setState("error");
-    }
-  };
-
-  return (
-    <div className="rounded-card2 border border-ink-border bg-ink-surface">
-      <div className="border-b border-ink-border px-5 py-3.5">
-        <span className="font-mono text-[11px] tracking-widest text-muted">{"// MANUAL WITHDRAW"}</span>
-      </div>
-      <div className="p-5 space-y-4">
-        {state === "done" ? (
-          <div className="flex flex-col items-center gap-3 py-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-success/40 bg-success/10">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <path d="M5 13l4 4L19 7" stroke="#2D9B6F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <p className="font-mono text-sm text-success">Funds sent to your wallet!</p>
-            {txUrl && (
-              <a href={txUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1 font-mono text-[10px] text-success/70 hover:text-success">
-                View on ArcScan
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 10L10 2M10 2H5M10 2v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-              </a>
-            )}
-            <button
-              onClick={() => { setState("idle"); setFile(null); setTasks([]); setSelected(null); }}
-              className="font-mono text-[10px] text-muted hover:text-cream-white"
-            >
-              Withdraw another task →
-            </button>
-          </div>
-        ) : (
-          <>
-            <p className="font-mono text-xs text-muted leading-relaxed">
-              Upload the <span className="text-cream-dim">backup.json</span> file downloaded at deploy time. It provides the Agent Wallet address so the server knows which wallet to drain. Your MetaMask signature (no secret token required) authorizes the withdrawal.
-            </p>
-
-            {/* File drop zone */}
-            <div
-              onClick={() => fileRef.current?.click()}
-              onDragOver={e => e.preventDefault()}
-              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-              className="flex cursor-pointer flex-col items-center gap-2 rounded-card border-2 border-dashed border-ink-border2 py-8 transition-colors hover:border-red-primary/40"
-            >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#6B5D4F" strokeWidth="1.5"/>
-                <path d="M14 2v6h6M12 12v6M9 15l3-3 3 3" stroke="#6B5D4F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              {file ? (
-                <span className="font-mono text-xs text-cream-dim">{file.name}</span>
-              ) : (
-                <>
-                  <span className="font-mono text-xs text-cream-dim">Click or drag & drop backup.json</span>
-                  <span className="font-mono text-[10px] text-muted">JSON files only</span>
-                </>
-              )}
-            </div>
-            <input ref={fileRef} type="file" accept=".json" className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-
-            {parseErr && (
-              <div className="rounded border border-red-primary/40 bg-red-bg px-3 py-2">
-                <p className="font-mono text-xs text-red-primary">{parseErr}</p>
-              </div>
-            )}
-
-            {/* Task selector */}
-            {tasks.length > 0 && (
-              <div className="space-y-2">
-                <p className="font-mono text-[11px] text-muted">Select the task to withdraw from:</p>
-                {tasks.map(t => (
-                  <button key={t.id} onClick={() => setSelected(t)}
-                    className={`flex w-full items-center justify-between rounded-card border px-4 py-3 transition-colors ${
-                      selected?.id === t.id
-                        ? "border-[#C8A87A]/50 bg-[#C8A87A]/10"
-                        : "border-ink-border2 bg-ink-surface2 hover:border-ink-border"
-                    }`}
-                  >
-                    <div className="text-left">
-                      <p className="font-mono text-xs text-cream-white">{t.label}</p>
-                      <p className="font-mono text-[10px] text-muted truncate max-w-xs">{t.walletAddress}</p>
-                    </div>
-                    {selected?.id === t.id && (
-                      <span className="font-mono text-[10px] text-[#C8A87A]">Selected ✓</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Balance + Reclaim */}
-            {selected && (
-              <AgentBalanceRow
-                walletAddress={selected.walletAddress}
-                isConnected={isConnected}
-                userAddress={userAddress ?? ""}
-                onReclaim={handleReclaim}
-                state={state}
-                err={reclaimErr}
-              />
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function AgentBalanceRow({ walletAddress, isConnected, userAddress, onReclaim, state, err }: {
-  walletAddress: string;
-  isConnected:   boolean;
-  userAddress:   string;
-  onReclaim:     () => void;
-  state:         "idle"|"loading"|"done"|"error";
-  err:           string;
-}) {
-  const { balance, loading } = useArcUsdcBalance(walletAddress);
-  const balNum     = parseFloat(balance);
-  const hasBalance = !loading && balNum >= 0.01;
-
-  return (
-    <div className="space-y-3">
-      <div className={`rounded-card border p-4 ${hasBalance ? "border-yellow-500/30 bg-yellow-500/5" : "border-ink-border2 bg-ink-surface2"}`}>
-        <div className="flex items-center justify-between">
-          <span className="font-mono text-[10px] text-muted">Agent Wallet Balance</span>
-          <span className={`font-mono text-sm font-semibold ${hasBalance ? "text-yellow-400" : "text-muted"}`}>
-            {loading ? "..." : `${balNum.toFixed(2)} USDC`}
-          </span>
-        </div>
-        <p className="mt-1 font-mono text-[10px] text-muted truncate">{walletAddress}</p>
-      </div>
-
-      {err && <p className="font-mono text-[10px] text-red-primary">{err}</p>}
-
-      {!isConnected ? (
-        <div className="rounded border border-ink-border2 px-4 py-3 text-center">
-          <p className="font-mono text-xs text-muted">Connect wallet to receive funds</p>
-        </div>
-      ) : hasBalance ? (
-        <button
-          onClick={onReclaim}
-          disabled={state === "loading"}
-          className="w-full rounded-lg border border-yellow-500/50 bg-yellow-500/15 py-3 font-body text-sm font-medium text-yellow-400 transition-colors hover:bg-yellow-500/25 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {state === "loading"
-            ? "Withdrawing…"
-            : `↩ Withdraw ${balNum.toFixed(2)} USDC → ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`}
-        </button>
-      ) : (
-        <div className="rounded border border-ink-border2 px-4 py-3 text-center">
-          <p className="font-mono text-xs text-muted">
-            {loading ? "Checking balance…" : "No USDC remaining in this agent wallet."}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ══ FAQ Data ═══════════════════════════════════════════════
 const FAQ_ITEMS = [
   {
@@ -470,15 +245,11 @@ const FAQ_ITEMS = [
   },
   {
     q: "If I clear my browser cache or switch devices, will I lose my tasks?",
-    a: "No. Tasks are synced to Firebase by your MetaMask address. Reconnect the same wallet on any device and all tasks reload automatically. backup.json is only needed if Firebase was not configured at deploy time.",
+    a: "No. Tasks are synced to Firebase by your MetaMask address. Just reconnect the same wallet on any device and all tasks reload automatically.",
   },
   {
-    q: "What if my tasks are gone and I don't have backup.json?",
-    a: "Your USDC is still safe in the Agent Wallet. Because reclaim only requires your MetaMask signature — no token needed — contact support with your MetaMask address and we can identify the Agent Wallet and initiate the withdrawal for you.",
-  },
-  {
-    q: "What is backup.json used for?",
-    a: "It stores the Agent Wallet address (DCW address) for each task. When using Manual Recovery, uploading backup.json tells the server which wallet to drain. Your MetaMask signature still authorizes the action — the file itself contains no secret.",
+    q: "What if my tasks disappear?",
+    a: "They will reload from Firebase when you reconnect your MetaMask. If they still don't appear, contact support with your MetaMask address and we can look up the Agent Wallet history and initiate recovery.",
   },
   {
     q: "Can other users see my tasks?",
@@ -490,7 +261,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "After a task is completed or canceled, where do leftover funds go?",
-    a: "USDC stays in the Agent Wallet until you actively withdraw it. When you cancel, the Reclaim Funds popup appears automatically. If you skip it, you can use the Manual Withdraw widget on this page at any time.",
+    a: "USDC stays in the Agent Wallet until you actively withdraw it. When you cancel, the Reclaim Funds popup appears automatically. If you skip it, go back to the Agent panel and cancel the task again to trigger the reclaim popup.",
   },
   {
     q: "Are there any fees?",
