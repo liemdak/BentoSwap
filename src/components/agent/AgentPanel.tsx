@@ -5,6 +5,9 @@ import {
   loadTasks, saveTasks, upsertTask, toISO, fmtNextRun, countdown,
   StoredTask,
 } from "@/lib/agentTasks";
+import {
+  loadTasksFromFirestore, saveTasksToFirestore, mergeTaskLists,
+} from "@/lib/firebaseTasks";
 import { useAgentRunner } from "@/hooks/useAgentRunner";
 import { useArcUsdcBalance } from "@/hooks/useTokenBalance";
 import { useWallet } from "@/context/WalletContext";
@@ -19,6 +22,7 @@ type Freq       = "daily" | "weekly" | "monthly";
 interface AgentTask {
   id:            string;
   walletAddress: string;
+  token?:        string;   // HMAC token — needed for Reclaim
   mode:          AgentMode;
   label:         string;
   sublabel:      string;
@@ -100,12 +104,15 @@ function useCountdowns(tasks: AgentTask[]) {
 
 // ──────────────────────────────────────────────────────────
 export default function AgentPanel() {
-  const { adapter: userAdapter, isConnected } = useWallet();
+  const { adapter: userAdapter, isConnected, address: userAddress } = useWallet();
 
   const [tasks,        setTasks]        = useState<AgentTask[]>([]);
   const [modal,        setModal]        = useState<AgentMode | null>(null);
   const [deploying,    setDeploying]    = useState(false);
-  const [deployedInfo, setDeployedInfo] = useState<{ address: string; label: string } | null>(null);
+  const [deployedInfo, setDeployedInfo] = useState<{ address: string; label: string; exportData?: string } | null>(null);
+
+  // Reclaim modal — shown when Cancel is clicked on a task that has balance
+  const [reclaimTask,  setReclaimTask]  = useState<AgentTask | null>(null);
 
   // Fund agent wallet from inside success screen
   const [fundAmt,      setFundAmt]      = useState("");
@@ -136,11 +143,31 @@ export default function AgentPanel() {
     }
   };
 
-  // ── Load tasks from localStorage on mount ───────────────
+  // ── Load from localStorage immediately (no flicker) ─────
   useEffect(() => {
-    const stored = loadTasks();
-    setTasks(stored as AgentTask[]);
+    setTasks(loadTasks() as AgentTask[]);
   }, []);
+
+  // ── Sync with Firestore when wallet connects ──────────────
+  useEffect(() => {
+    if (!userAddress) return;
+    (async () => {
+      const [local, remote] = await Promise.all([
+        Promise.resolve(loadTasks()),
+        loadTasksFromFirestore(userAddress),
+      ]);
+      const merged = mergeTaskLists(local, remote);
+      saveTasks(merged);
+      setTasks(merged as AgentTask[]);
+    })();
+  }, [userAddress]);
+
+  // ── Persist to Firestore whenever tasks change ────────────
+  useEffect(() => {
+    if (!userAddress || tasks.length === 0) return;
+    const tid = setTimeout(() => saveTasksToFirestore(userAddress, tasks as StoredTask[]), 1200);
+    return () => clearTimeout(tid);
+  }, [tasks, userAddress]);
 
   // ── Client-side runner (checks every 20s) ───────────────
   const handleRunnerUpdate = useCallback((updated: StoredTask[]) => {
@@ -266,9 +293,19 @@ export default function AgentPanel() {
       };
 
       upsertTask(storedTask);
-      setTasks(loadTasks() as AgentTask[]);
+      const allTasks = loadTasks();
+      setTasks(allTasks as AgentTask[]);
+      if (userAddress) saveTasksToFirestore(userAddress, allTasks);
+
+      // Build backup JSON for export
+      const exportData = JSON.stringify({
+        version:    "1.0",
+        exportedAt: new Date().toISOString(),
+        tasks:      [storedTask],
+      }, null, 2);
+
       // Show success state with wallet address + ArcScan link
-      setDeployedInfo({ address: data.address ?? "", label: MAP[modal!].label });
+      setDeployedInfo({ address: data.address ?? "", label: MAP[modal!].label, exportData });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -276,17 +313,29 @@ export default function AgentPanel() {
     }
   };
 
+  // ── Persist helper: localStorage + Firestore + state ─────
+  const persistTasks = useCallback((updated: StoredTask[]) => {
+    saveTasks(updated);
+    setTasks(updated as AgentTask[]);
+    if (userAddress) saveTasksToFirestore(userAddress, updated);
+  }, [userAddress]);
+
   const toggleTask = (id: string) => {
     const updated = loadTasks().map(t =>
       t.id === id ? { ...t, status: (t.status === "active" ? "paused" : "active") as TaskStatus } : t
     );
-    saveTasks(updated);
-    setTasks(updated as AgentTask[]);
+    persistTasks(updated);
   };
+
+  // Direct remove — used after Reclaim or when balance is zero
   const removeTask = (id: string) => {
     const updated = loadTasks().filter(t => t.id !== id);
-    saveTasks(updated);
-    setTasks(updated as AgentTask[]);
+    persistTasks(updated);
+  };
+
+  // Cancel button handler — shows Reclaim modal first
+  const handleCancel = (task: AgentTask) => {
+    setReclaimTask(task);
   };
 
   return (
@@ -380,7 +429,7 @@ export default function AgentPanel() {
                     {task.status === "active" ? "Pause" : "Resume"}
                   </button>
                   <button
-                    onClick={() => removeTask(task.id)}
+                    onClick={() => handleCancel(task)}
                     className="rounded border border-red-primary/25 px-2.5 py-1.5 font-mono text-[11px] text-red-primary transition-colors hover:bg-red-bg"
                   >
                     Cancel
@@ -399,6 +448,17 @@ export default function AgentPanel() {
           Powered by Circle Developer Controlled Wallets · Arc Testnet · Gasless via Circle Paymaster
         </p>
       </div>
+
+      {/* ══ RECLAIM MODAL ════════════════════════════════ */}
+      {reclaimTask && (
+        <ReclaimModal
+          task={reclaimTask}
+          recipientAddress={userAddress ?? ""}
+          onDone={() => { removeTask(reclaimTask.id); setReclaimTask(null); }}
+          onSkip={() => { removeTask(reclaimTask.id); setReclaimTask(null); }}
+          onClose={() => setReclaimTask(null)}
+        />
+      )}
 
       {/* ══ MODAL ══════════════════════════════════════════ */}
       {modal && (
@@ -511,6 +571,34 @@ export default function AgentPanel() {
                           <p className="font-mono text-[10px] text-muted">Connect wallet to fund</p>
                         )}
                       </div>
+
+                      {/* Export backup JSON */}
+                      {deployedInfo.exportData && (
+                        <div className="rounded border border-ink-border2 bg-ink-surface2 p-3 space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[10px] text-cream-dim">💾 Save backup file</span>
+                            <span className="font-mono text-[9px] text-muted">— needed to reclaim funds if tasks are lost</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const blob = new Blob([deployedInfo.exportData!], { type: "application/json" });
+                              const url  = URL.createObjectURL(blob);
+                              const a    = document.createElement("a");
+                              a.href     = url;
+                              a.download = `bento-agent-backup-${Date.now()}.json`;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            }}
+                            className="flex w-full items-center justify-center gap-2 rounded border border-ink-border2 py-2 font-mono text-[11px] text-cream-dim transition-colors hover:border-cream-dim/40 hover:text-cream-white"
+                          >
+                            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                              <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M2 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                            </svg>
+                            Download backup.json
+                          </button>
+                        </div>
+                      )}
 
                       {/* Notes */}
                       <div className="space-y-1 border-t border-ink-border pt-2">
@@ -733,6 +821,135 @@ export default function AgentPanel() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ══ Reclaim Modal ══════════════════════════════════════════
+function ReclaimModal({ task, recipientAddress, onDone, onSkip, onClose }: {
+  task:             AgentTask;
+  recipientAddress: string;
+  onDone:           () => void;
+  onSkip:           () => void;
+  onClose:          () => void;
+}) {
+  const { balance, loading } = useArcUsdcBalance(task.walletAddress);
+  const [state,    setState] = useState<"idle"|"loading"|"done"|"error">("idle");
+  const [txUrl,    setTxUrl] = useState("");
+  const [err,      setErr]   = useState("");
+
+  const balNum    = parseFloat(balance);
+  const hasBalance = !loading && balNum >= 0.01;
+
+  const handleReclaim = async () => {
+    if (!recipientAddress) { setErr("No wallet connected"); return; }
+    setState("loading"); setErr("");
+    try {
+      const res  = await fetch("/api/agent/reclaim", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          walletId:         task.id,
+          token:            task.token,
+          walletAddress:    task.walletAddress,
+          recipientAddress,
+        }),
+      });
+      const data = await res.json() as { explorerUrl?: string; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Reclaim failed");
+      setTxUrl(data.explorerUrl ?? "");
+      setState("done");
+    } catch (e: unknown) {
+      setErr((e as Error).message ?? "Reclaim failed");
+      setState("error");
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-sm rounded-card2 border border-ink-border bg-ink-surface shadow-card-hover">
+
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-ink-border px-5 py-4">
+          <div>
+            <div className="font-mono text-[10px] tracking-widest text-red-primary">{"{ CANCEL TASK }"}</div>
+            <div className="mt-0.5 font-display text-base text-cream-white">{task.label}</div>
+          </div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg border border-ink-border2 text-muted hover:text-cream-white">✕</button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {state === "done" ? (
+            <div className="space-y-3 text-center">
+              <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-full border border-success/40 bg-success/10">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 13l4 4L19 7" stroke="#2D9B6F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <p className="font-mono text-sm text-success">Funds reclaimed!</p>
+              {txUrl && (
+                <a href={txUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1 font-mono text-[10px] text-success/70 hover:text-success">
+                  View on ArcScan
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 10L10 2M10 2H5M10 2v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                </a>
+              )}
+              <button onClick={onDone} className="w-full rounded-lg bg-success py-2.5 font-body text-sm font-medium text-white">
+                Done
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Balance check */}
+              <div className={`rounded-card border p-4 ${hasBalance ? "border-yellow-500/30 bg-yellow-500/5" : "border-ink-border2 bg-ink-surface2"}`}>
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] text-muted">Agent Wallet Balance</span>
+                  <span className={`font-mono text-sm font-semibold ${hasBalance ? "text-yellow-400" : "text-muted"}`}>
+                    {loading ? "..." : `${balNum.toFixed(2)} USDC`}
+                  </span>
+                </div>
+                <p className="mt-1.5 font-mono text-[10px] text-muted truncate">{task.walletAddress}</p>
+              </div>
+
+              {hasBalance ? (
+                <div className="space-y-2">
+                  <p className="font-mono text-xs text-cream-dim">
+                    This agent wallet still has <span className="text-yellow-400">{balNum.toFixed(2)} USDC</span>. Withdraw to your wallet before canceling?
+                  </p>
+                  {err && <p className="font-mono text-[10px] text-red-primary">{err}</p>}
+                  <button
+                    onClick={handleReclaim}
+                    disabled={state === "loading" || !recipientAddress}
+                    className="w-full rounded-lg border border-yellow-500/50 bg-yellow-500/15 py-2.5 font-body text-sm font-medium text-yellow-400 transition-colors hover:bg-yellow-500/25 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {state === "loading" ? "Reclaiming…" : `↩ Reclaim ${balNum.toFixed(2)} USDC → My Wallet`}
+                  </button>
+                  <button
+                    onClick={onSkip}
+                    className="w-full rounded-lg border border-red-primary/30 py-2.5 font-body text-sm text-red-primary transition-colors hover:bg-red-bg"
+                  >
+                    Cancel without reclaiming
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="font-mono text-xs text-muted">
+                    {loading ? "Checking balance…" : "Agent wallet has no funds. Safe to cancel."}
+                  </p>
+                  <button
+                    onClick={onSkip}
+                    disabled={loading}
+                    className="w-full rounded-lg bg-red-primary py-2.5 font-body text-sm font-medium text-white transition-colors hover:bg-red-dim disabled:opacity-50"
+                  >
+                    {loading ? "Checking…" : "Confirm Cancel"}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

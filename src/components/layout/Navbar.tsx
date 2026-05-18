@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: "/bridge",  label: "Bridge" },
   { href: "/balance", label: "Balance" },
   { href: "/agent",   label: "Agent", isNew: true },
+  { href: "/guide",   label: "Guide" },
   { href: "/faucet",  label: "Faucet" },
 ];
 
