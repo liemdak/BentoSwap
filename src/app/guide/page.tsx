@@ -63,7 +63,7 @@ export default function GuidePage() {
                   onClick={() => scrollTo(s.id)}
                   className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-all ${
                     activeId === s.id
-                      ? "bg-red-bg border border-red-primary/30 text-red-primary"
+                      ? "bg-[#C8A87A]/10 border border-[#C8A87A]/40 text-[#C8A87A]"
                       : "text-muted hover:text-cream-white"
                   }`}
                 >
@@ -363,7 +363,7 @@ function ManualWithdrawWidget() {
                   <button key={t.id} onClick={() => setSelected(t)}
                     className={`flex w-full items-center justify-between rounded-card border px-4 py-3 transition-colors ${
                       selected?.id === t.id
-                        ? "border-red-primary/50 bg-red-bg"
+                        ? "border-[#C8A87A]/50 bg-[#C8A87A]/10"
                         : "border-ink-border2 bg-ink-surface2 hover:border-ink-border"
                     }`}
                   >
@@ -372,7 +372,7 @@ function ManualWithdrawWidget() {
                       <p className="font-mono text-[10px] text-muted truncate max-w-xs">{t.walletAddress}</p>
                     </div>
                     {selected?.id === t.id && (
-                      <span className="font-mono text-[10px] text-red-primary">Selected</span>
+                      <span className="font-mono text-[10px] text-[#C8A87A]">Selected ✓</span>
                     )}
                   </button>
                 ))}
@@ -488,13 +488,13 @@ const FAQ_ITEMS = [
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={`rounded-card border transition-colors ${open ? "border-red-primary/30 bg-red-bg" : "border-ink-border bg-ink-surface"}`}>
+    <div className={`rounded-card border transition-colors ${open ? "border-[#C8A87A]/30 bg-[#C8A87A]/5" : "border-ink-border bg-ink-surface"}`}>
       <button
         onClick={() => setOpen(o => !o)}
         className="flex w-full items-center justify-between px-5 py-4 text-left"
       >
         <span className="font-mono text-sm text-cream-dim pr-4">{q}</span>
-        <span className={`flex-shrink-0 font-mono text-lg transition-transform ${open ? "rotate-45 text-red-primary" : "text-muted"}`}>+</span>
+        <span className={`flex-shrink-0 font-mono text-lg transition-transform ${open ? "rotate-45 text-[#C8A87A]" : "text-muted"}`}>+</span>
       </button>
       {open && (
         <div className="px-5 pb-4">
@@ -518,8 +518,8 @@ function SectionHeader({ num, title }: { num: string; title: string }) {
 }
 
 function FlowBox({ label, sub, color }: { label: string; sub: string; color: "blue"|"red"|"green" }) {
-  const borderColor = { blue: "border-blue-500/40", red: "border-red-primary/40", green: "border-success/40" }[color];
-  const textColor   = { blue: "text-blue-400",      red: "text-red-primary",      green: "text-success"     }[color];
+  const borderColor = { blue: "border-blue-500/40", red: "border-[#C8A87A]/50", green: "border-success/40" }[color];
+  const textColor   = { blue: "text-blue-400",      red: "text-[#C8A87A]",      green: "text-success"     }[color];
   return (
     <div className={`flex flex-1 flex-col items-center justify-center rounded-card border ${borderColor} bg-ink-surface2 px-4 py-3 text-center`}>
       <span className={`font-mono text-xs font-semibold ${textColor}`}>{label}</span>
@@ -552,7 +552,7 @@ function InfoCard({ icon, title, body }: { icon: string; title: string; body: st
 function ModeCard({ tag, title, steps }: { tag: string; title: string; steps: string[] }) {
   return (
     <div className="rounded-card border border-ink-border bg-ink-surface p-4 space-y-3">
-      <div className="font-mono text-[10px] tracking-widest text-red-primary">{"{ " + tag + " }"}</div>
+      <div className="font-mono text-[10px] tracking-widest text-[#C8A87A]">{"{ " + tag + " }"}</div>
       <p className="font-mono text-sm font-semibold text-cream-white">{title}</p>
       <div className="space-y-1.5">
         {steps.map((s, i) => (
