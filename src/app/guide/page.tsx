@@ -167,7 +167,7 @@ export default function GuidePage() {
                   <SecurityCard
                     icon="✍️"
                     title="Wallet Signature"
-                    body="Reclaiming funds requires a personal_sign (EIP-191) from your MetaMask. The server verifies the signature on-chain — only the real wallet owner can authorize a withdrawal."
+                    body="Reclaiming funds requires a personal_sign (EIP-191) from your MetaMask. The server verifies the signature cryptographically — only the holder of your private key can authorize a withdrawal."
                   />
                   <SecurityCard
                     icon="🛡️"
@@ -205,19 +205,21 @@ export default function GuidePage() {
                   <div className="rounded-card border border-success/30 bg-success/5 p-4 space-y-2">
                     <div className="font-mono text-[10px] tracking-widest text-success">METHOD 1 — AUTOMATIC</div>
                     <p className="font-mono text-xs text-cream-dim leading-relaxed">
-                      Click <strong>Cancel</strong> in the task list → balance popup appears → click <strong>Reclaim & Cancel</strong> → funds sent back immediately.
+                      Click <strong>Cancel</strong> in the task list → balance popup appears → click <strong>Reclaim & Cancel</strong> → MetaMask will ask you to sign a message → funds sent back immediately.
                     </p>
                     <div className="flex items-center gap-2 rounded border border-success/20 bg-success/10 px-3 py-2">
-                      <span className="font-mono text-[9px] text-success">✓ Recommended</span>
+                      <span className="font-mono text-[9px] text-success">✓ Recommended · no token needed · just your wallet signature</span>
                     </div>
                   </div>
                   <div className="rounded-card border border-ink-border2 bg-ink-surface2 p-4 space-y-2">
                     <div className="font-mono text-[10px] tracking-widest text-cream-dim">METHOD 2 — MANUAL RECOVERY</div>
                     <p className="font-mono text-xs text-muted leading-relaxed">
-                      If tasks are lost (cleared cache, switched device), use the <strong className="text-cream-dim">backup.json</strong> file downloaded at deploy time to recover funds below.
+                      If tasks are missing from Firebase (e.g. Firebase was not configured), upload your <strong className="text-cream-dim">backup.json</strong> below. The file provides the Agent Wallet address — your MetaMask signature still authorizes the withdrawal.
                     </p>
                   </div>
                 </div>
+
+                <Callout type="info" text="Tasks are automatically synced to Firebase by your MetaMask address. Switching devices or clearing cache will NOT lose your tasks as long as Firebase is configured. backup.json is a last-resort fallback only." />
 
                 {/* Manual Withdraw Widget */}
                 <ManualWithdrawWidget />
@@ -334,8 +336,8 @@ function ManualWithdrawWidget() {
           </div>
         ) : (
           <>
-            <p className="font-mono text-xs text-muted">
-              Upload the <span className="text-cream-dim">backup.json</span> file you downloaded at deploy time to withdraw funds to your connected MetaMask wallet.
+            <p className="font-mono text-xs text-muted leading-relaxed">
+              Upload the <span className="text-cream-dim">backup.json</span> file downloaded at deploy time. It provides the Agent Wallet address so the server knows which wallet to drain. Your MetaMask signature (no secret token required) authorizes the withdrawal.
             </p>
 
             {/* File drop zone */}
@@ -468,11 +470,15 @@ const FAQ_ITEMS = [
   },
   {
     q: "If I clear my browser cache or switch devices, will I lose my tasks?",
-    a: "No — tasks are now synced to Firebase by your MetaMask address. Simply reconnect the same wallet on any device and all tasks will appear.",
+    a: "No. Tasks are synced to Firebase by your MetaMask address. Reconnect the same wallet on any device and all tasks reload automatically. backup.json is only needed if Firebase was not configured at deploy time.",
   },
   {
-    q: "What if I lose both my tasks AND my backup.json?",
-    a: "USDC is still in the Agent Wallet. Since reclaim only requires your MetaMask signature (no token needed), you can still recover funds — just upload any backup.json that contains the task's walletAddress, or contact support with your MetaMask address so we can look up the wallet history.",
+    q: "What if my tasks are gone and I don't have backup.json?",
+    a: "Your USDC is still safe in the Agent Wallet. Because reclaim only requires your MetaMask signature — no token needed — contact support with your MetaMask address and we can identify the Agent Wallet and initiate the withdrawal for you.",
+  },
+  {
+    q: "What is backup.json used for?",
+    a: "It stores the Agent Wallet address (DCW address) for each task. When using Manual Recovery, uploading backup.json tells the server which wallet to drain. Your MetaMask signature still authorizes the action — the file itself contains no secret.",
   },
   {
     q: "Can other users see my tasks?",
