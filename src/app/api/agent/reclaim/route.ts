@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireToken } from "@/lib/agentAuth";
 
 const ARC_USDC    = "0x3600000000000000000000000000000000000000";
 const ARC_RPC     = "https://rpc.testnet.arc.network";
@@ -14,25 +13,37 @@ async function getCircleClient() {
 }
 
 // POST /api/agent/reclaim
-// body: { walletId, token, walletAddress, recipientAddress }
-// Sends all USDC from agent wallet back to the user's wallet
+// body: { walletId, walletAddress, recipientAddress, message, signature }
+// Caller must sign `message` with the MetaMask wallet (personal_sign / EIP-191)
+// Server verifies ecrecover(message, signature) === walletAddress
 export async function POST(req: NextRequest) {
   const body = await req.json() as {
-    walletId?:        string;
-    token?:           string;
-    walletAddress?:   string;
+    walletId?:         string;
+    walletAddress?:    string;
     recipientAddress?: string;
+    message?:          string;
+    signature?:        string;
   };
 
-  const { walletId, token, walletAddress, recipientAddress } = body;
+  const { walletId, walletAddress, recipientAddress, message, signature } = body;
 
-  if (!walletId || !walletAddress || !recipientAddress) {
+  if (!walletId || !walletAddress || !recipientAddress || !message || !signature) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  // Verify HMAC — only the original deployer can reclaim
-  const auth = requireToken(walletId, token);
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 401 });
+  // ── Verify EIP-191 signature ─────────────────────────────
+  // Only the real owner of walletAddress can produce a valid signature
+  try {
+    const { verifyMessage } = await import("viem");
+    const valid = await verifyMessage({
+      address:   walletAddress as `0x${string}`,
+      message,
+      signature: signature as `0x${string}`,
+    });
+    if (!valid) return NextResponse.json({ error: "Invalid signature — wallet mismatch" }, { status: 401 });
+  } catch {
+    return NextResponse.json({ error: "Signature verification failed" }, { status: 401 });
+  }
 
   try {
     // ── Query on-chain USDC balance ──────────────────────────

@@ -22,7 +22,6 @@ type Freq       = "daily" | "weekly" | "monthly";
 interface AgentTask {
   id:            string;
   walletAddress: string;
-  token?:        string;   // HMAC token — needed for Reclaim
   mode:          AgentMode;
   label:         string;
   sublabel:      string;
@@ -845,14 +844,26 @@ function ReclaimModal({ task, recipientAddress, onDone, onSkip, onClose }: {
     if (!recipientAddress) { setErr("No wallet connected"); return; }
     setState("loading"); setErr("");
     try {
+      // ── Step 1: ask user to sign with MetaMask (EIP-191) ──
+      const win = window as Window & { ethereum?: { request: (a: unknown) => Promise<unknown> } };
+      if (!win.ethereum) throw new Error("MetaMask not found");
+
+      const message   = `Reclaim task ${task.id} funds to ${recipientAddress}`;
+      const signature = await win.ethereum.request({
+        method: "personal_sign",
+        params: [message, recipientAddress],
+      }) as string;
+
+      // ── Step 2: send signature to server ──────────────────
       const res  = await fetch("/api/agent/reclaim", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({
           walletId:         task.id,
-          token:            task.token,
           walletAddress:    task.walletAddress,
           recipientAddress,
+          message,
+          signature,
         }),
       });
       const data = await res.json() as { explorerUrl?: string; error?: string };

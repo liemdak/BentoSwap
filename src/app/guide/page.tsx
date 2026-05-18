@@ -165,9 +165,9 @@ export default function GuidePage() {
               <div className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <SecurityCard
-                    icon="🔐"
-                    title="HMAC Token"
-                    body="Each task has its own security token. The server only executes commands when the token matches — even the developer cannot run your task without it."
+                    icon="✍️"
+                    title="Wallet Signature"
+                    body="Reclaiming funds requires a personal_sign (EIP-191) from your MetaMask. The server verifies the signature on-chain — only the real wallet owner can authorize a withdrawal."
                   />
                   <SecurityCard
                     icon="🛡️"
@@ -272,14 +272,26 @@ function ManualWithdrawWidget() {
     if (!selected || !userAddress) return;
     setState("loading"); setReclaimErr("");
     try {
+      // ── Step 1: sign with MetaMask (EIP-191) ──────────────
+      const win = window as Window & { ethereum?: { request: (a: unknown) => Promise<unknown> } };
+      if (!win.ethereum) throw new Error("MetaMask not found");
+
+      const message   = `Reclaim task ${selected.id} funds to ${userAddress}`;
+      const signature = await win.ethereum.request({
+        method: "personal_sign",
+        params: [message, userAddress],
+      }) as string;
+
+      // ── Step 2: send to server ─────────────────────────────
       const res  = await fetch("/api/agent/reclaim", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({
           walletId:         selected.id,
-          token:            selected.token,
           walletAddress:    selected.walletAddress,
           recipientAddress: userAddress,
+          message,
+          signature,
         }),
       });
       const data = await res.json() as { explorerUrl?: string; error?: string };
@@ -460,7 +472,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "What if I lose both my tasks AND my backup.json?",
-    a: "This is the worst case. USDC is still in the Agent Wallet but you no longer have the token to withdraw it. Contact support with your MetaMask address so we can look up the wallet history. This is why saving backup.json and enabling Firebase sync both matter.",
+    a: "USDC is still in the Agent Wallet. Since reclaim only requires your MetaMask signature (no token needed), you can still recover funds — just upload any backup.json that contains the task's walletAddress, or contact support with your MetaMask address so we can look up the wallet history.",
   },
   {
     q: "Can other users see my tasks?",
