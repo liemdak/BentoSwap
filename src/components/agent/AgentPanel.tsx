@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   loadTasks, saveTasks, upsertTask, toISO, fmtNextRun, countdown,
   StoredTask,
@@ -781,14 +781,20 @@ export default function AgentPanel() {
                 <p className="mt-2.5 text-center font-mono text-[10px] text-muted">
                   1 EIP-712 signature · No gas required · Cancel anytime
                 </p>
-                <p className="mt-1 text-center font-mono text-[10px] text-muted/50">
-                  ⚠ Testnet demo — agent runs while this tab is open. Task config is saved to Firebase and resumes on next visit.
-                </p>
               </div>
             )}
           </div>
         </div>
       )}
+
+      {/* ── Testnet demo note ──────────────────────────────── */}
+      <div className="rounded-card border border-ink-border bg-ink-surface px-5 py-3.5 flex items-start gap-3">
+        <span className="mt-0.5 flex-shrink-0 text-sm">⚠️</span>
+        <p className="font-mono text-[11px] text-white/60 leading-relaxed">
+          <span className="text-white/80 font-semibold">Testnet demo.</span>{" "}
+          The agent executes while this browser tab is open. Your task settings are saved to Firebase — reopen the app anytime to resume. A server-side scheduler will be added in the mainnet version.
+        </p>
+      </div>
     </div>
   );
 }
@@ -1049,32 +1055,10 @@ function DateTimePicker({ date, time, freq, onDateChange, onTimeChange }: {
 
   return (
     <div className="space-y-2">
-      {/* Date row */}
+      {/* Date row — masked dd-mm-yyyy */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="font-mono text-[10px] text-muted w-24 flex-shrink-0">First payment</span>
-        <div className="relative flex items-center">
-          <input
-            type="text"
-            value={date}
-            placeholder="YYYY-MM-DD"
-            onChange={e => onDateChange(e.target.value)}
-            onBlur={e => {
-              // auto-format: accept DD/MM/YYYY or D-M-YYYY etc.
-              const raw = e.target.value.replace(/[^\d]/g, "");
-              if (raw.length === 8) {
-                const y = raw.slice(0,4), m = raw.slice(4,6), d = raw.slice(6,8);
-                onDateChange(`${y}-${m}-${d}`);
-              }
-            }}
-            className="w-32 rounded border border-ink-border bg-black px-2.5 py-1.5 pr-6 font-mono text-xs text-white placeholder:text-muted/50 focus:outline-none focus:border-red-primary/50"
-          />
-          {date && (
-            <button onClick={() => onDateChange("")}
-              className="absolute right-1.5 text-muted hover:text-cream-white transition-colors font-mono text-[10px]">
-              ✕
-            </button>
-          )}
-        </div>
+        <MaskedDateInput value={date} onChange={onDateChange} />
         {/* Presets */}
         <div className="flex gap-1">
           {presets.map(p => (
@@ -1086,29 +1070,10 @@ function DateTimePicker({ date, time, freq, onDateChange, onTimeChange }: {
         </div>
       </div>
 
-      {/* Time row */}
+      {/* Time row — masked HH:MM */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="font-mono text-[10px] text-muted w-24 flex-shrink-0">Time</span>
-        <div className="relative flex items-center">
-          <input
-            type="text"
-            value={time}
-            placeholder="HH:MM"
-            onChange={e => onTimeChange(e.target.value)}
-            onBlur={e => {
-              // auto-format: accept HHMM → HH:MM
-              const raw = e.target.value.replace(/[^\d]/g, "");
-              if (raw.length === 4) onTimeChange(`${raw.slice(0,2)}:${raw.slice(2,4)}`);
-            }}
-            className="w-20 rounded border border-ink-border bg-black px-2.5 py-1.5 pr-6 font-mono text-xs text-white placeholder:text-muted/50 focus:outline-none focus:border-red-primary/50"
-          />
-          {time && (
-            <button onClick={() => onTimeChange("")}
-              className="absolute right-1.5 text-muted hover:text-cream-white transition-colors font-mono text-[10px]">
-              ✕
-            </button>
-          )}
-        </div>
+        <MaskedTimeInput value={time} onChange={onTimeChange} />
         {/* Quick time presets */}
         <div className="flex gap-1">
           {["09:00","12:00","18:00"].map(t => (
@@ -1347,6 +1312,99 @@ function AgentWalletRow({ address }: { address: string }) {
             </>
           )}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── Masked date input: dd-mm-yyyy ──────────────────────────
+function MaskedDateInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  // Store raw display string "dd-mm-yyyy", convert to/from YYYY-MM-DD for parent
+  const toDisplay = (iso: string) => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-");
+    if (!y || !m || !d) return iso;
+    return `${d}-${m}-${y}`;
+  };
+
+  const toISO = (display: string) => {
+    const digits = display.replace(/\D/g, "");
+    if (digits.length === 8) {
+      return `${digits.slice(4,8)}-${digits.slice(2,4)}-${digits.slice(0,2)}`;
+    }
+    return "";
+  };
+
+  const handleChange = (raw: string) => {
+    // Keep only digits, max 8
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    // Build masked string dd-mm-yyyy
+    let masked = digits;
+    if (digits.length > 2) masked = digits.slice(0,2) + "-" + digits.slice(2);
+    if (digits.length > 4) masked = digits.slice(0,2) + "-" + digits.slice(2,4) + "-" + digits.slice(4);
+    // Only fire parent onChange when we have a complete valid date
+    if (digits.length === 8) {
+      onChange(toISO(masked));
+    } else {
+      onChange(""); // incomplete — clear parent so validation doesn't trigger
+    }
+    return masked;
+  };
+
+  const [display, setDisplay] = React.useState(() => toDisplay(value));
+
+  // Sync when parent sets date via preset buttons
+  React.useEffect(() => { setDisplay(toDisplay(value)); }, [value]);
+
+  return (
+    <div className="relative flex items-center">
+      <input
+        type="text"
+        value={display}
+        placeholder="dd-mm-yyyy"
+        maxLength={10}
+        onChange={e => setDisplay(handleChange(e.target.value))}
+        className="w-32 rounded border border-ink-border bg-black px-2.5 py-1.5 pr-6 font-mono text-xs text-white placeholder:text-muted/50 focus:outline-none focus:border-red-primary/50"
+      />
+      {display && (
+        <button onClick={() => { setDisplay(""); onChange(""); }}
+          className="absolute right-1.5 text-muted hover:text-cream-white transition-colors font-mono text-[10px]">
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Masked time input: HH:MM ────────────────────────────────
+function MaskedTimeInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const handleChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 4);
+    let masked = digits;
+    if (digits.length > 2) masked = digits.slice(0,2) + ":" + digits.slice(2);
+    if (digits.length === 4) onChange(masked);
+    else onChange("");
+    return masked;
+  };
+
+  const [display, setDisplay] = React.useState(value);
+  React.useEffect(() => { setDisplay(value); }, [value]);
+
+  return (
+    <div className="relative flex items-center">
+      <input
+        type="text"
+        value={display}
+        placeholder="hh:mm"
+        maxLength={5}
+        onChange={e => setDisplay(handleChange(e.target.value))}
+        className="w-20 rounded border border-ink-border bg-black px-2.5 py-1.5 pr-6 font-mono text-xs text-white placeholder:text-muted/50 focus:outline-none focus:border-red-primary/50"
+      />
+      {display && (
+        <button onClick={() => { setDisplay(""); onChange(""); }}
+          className="absolute right-1.5 text-muted hover:text-cream-white transition-colors font-mono text-[10px]">
+          ✕
+        </button>
       )}
     </div>
   );

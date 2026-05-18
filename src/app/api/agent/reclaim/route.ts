@@ -15,7 +15,7 @@ async function getCircleClient() {
 // POST /api/agent/reclaim
 // body: { walletId, walletAddress, recipientAddress, message, signature }
 // Caller must sign `message` with the MetaMask wallet (personal_sign / EIP-191)
-// Server verifies ecrecover(message, signature) === walletAddress
+// Server verifies ecrecover(message, signature) === recipientAddress (MetaMask)
 export async function POST(req: NextRequest) {
   const body = await req.json() as {
     walletId?:         string;
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   try {
     const { verifyMessage } = await import("viem");
     const valid = await verifyMessage({
-      address:   walletAddress as `0x${string}`,
+      address:   recipientAddress as `0x${string}`,  // MetaMask wallet, not DCW
       message,
       signature: signature as `0x${string}`,
     });
