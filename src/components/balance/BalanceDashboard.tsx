@@ -411,7 +411,7 @@ export default function BalanceDashboard() {
         <div className="px-5 py-6 sm:px-7 sm:py-7">
           {/* Label */}
           <div className="mb-1 flex items-center gap-2">
-            <span className="font-mono text-[10px] tracking-widest text-muted">// TOTAL UNIFIED BALANCE</span>
+            <span className="font-mono text-[10px] tracking-widest text-muted">{"// TOTAL UNIFIED BALANCE"}</span>
             {isConnected && (
               <span className="flex items-center gap-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
@@ -491,7 +491,7 @@ export default function BalanceDashboard() {
       {/* ══ HOW IT WORKS — compact horizontal ══════════════════ */}
       <div className="rounded-card2 border border-ink-border bg-ink-surface px-4 py-3 sm:px-5">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-[10px] tracking-widest text-muted mr-2">// HOW IT WORKS</span>
+          <span className="font-mono text-[10px] tracking-widest text-muted mr-2">{"// HOW IT WORKS"}</span>
           {[
             { step: "01", label: "Deposit",   desc: "Wallet → Gateway" },
             { step: "02", label: "Aggregate", desc: "Pooled cross-chain" },
