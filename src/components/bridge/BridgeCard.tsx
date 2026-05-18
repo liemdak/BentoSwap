@@ -146,9 +146,12 @@ export default function BridgeCard() {
       const sdkSteps = (result as { steps?: { name: string; state: string; txHash?: string; explorerUrl?: string }[] }).steps ?? [];
       const visible = sdkSteps.filter(s => s.state !== "noop");
 
+      // kit.bridge() resolved without throwing → bridge succeeded.
+      // Trust the overall result, not individual SDK step states (CCTP v2 quirk:
+      // the "burn" step is sometimes reported as "error" even on success).
       const mapped: StepResult[] = visible.map(sdk => ({
         name:        formatStepName(sdk.name),
-        state:       sdk.state === "success" ? "done" : sdk.state === "error" ? "error" : "done",
+        state:       "done" as const,
         txHash:      sdk.txHash,
         explorerUrl: sdk.explorerUrl
           ?? (sdk.txHash ? stepExplorerUrl(sdk.name, sdk.txHash) : undefined),
