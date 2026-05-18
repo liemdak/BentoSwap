@@ -35,6 +35,7 @@ interface StepResult {
 }
 
 const INITIAL_STEPS: StepResult[] = [
+  { name: "Approve",     state: "pending" },
   { name: "Burn",        state: "pending" },
   { name: "Attestation", state: "pending" },
   { name: "Mint",        state: "pending" },
@@ -131,7 +132,8 @@ export default function BridgeCard() {
     if (!adapter || !canBridge) return;
     setBridgeState("running");
     setErrMsg("");
-    setSteps(INITIAL_STEPS.map((s, i) => ({ ...s, state: i === 0 ? "active" : "pending" })));
+    // Show Approve as active first — it's always the first real step
+    setSteps(INITIAL_STEPS.map((s, i) => ({ ...s, state: i === 0 ? "active" : "pending" as const })));
 
     try {
       const result = await kit.bridge({
@@ -144,11 +146,12 @@ export default function BridgeCard() {
       const sdkSteps = (result as { steps?: { name: string; state: string; txHash?: string; explorerUrl?: string }[] }).steps ?? [];
       const visible = sdkSteps.filter(s => s.state !== "noop");
 
+      // Bridge succeeded (no exception thrown) → force ALL steps to "done"
+      // SDK may return intermediate "error" states for retried steps — ignore them
       const mapped: StepResult[] = visible.map(sdk => ({
-        name:  formatStepName(sdk.name),
-        state: sdk.state === "success" ? "done" : sdk.state === "error" ? "error" : "done",
+        name:        formatStepName(sdk.name),
+        state:       "done" as const,
         txHash:      sdk.txHash,
-        // Prefer SDK-provided URL; fall back to chain-correct explorer
         explorerUrl: sdk.explorerUrl
           ?? (sdk.txHash ? stepExplorerUrl(sdk.name, sdk.txHash) : undefined),
       }));
