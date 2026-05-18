@@ -338,6 +338,7 @@ function ChainRow({
               loading={withState === "loading"}
               err={withErr}
               onComplete={handleCompleteWithdraw}
+              onDismiss={() => { onWithdraw(chain.id); setWithState("idle"); setWithPending(null); setWithErr(""); setWithdrawAmt(""); }}
             />
           ) : (
             <>
@@ -588,13 +589,14 @@ export default function BalanceDashboard() {
 
 // ── Withdraw Step 2 Panel — polls block until ready ────────
 function WithdrawStep2Panel({
-  pending, rpc, loading, err, onComplete,
+  pending, rpc, loading, err, onComplete, onDismiss,
 }: {
   pending: { withdrawalBlock: number; txHash: string; explorerUrl?: string };
   rpc: string;
   loading: boolean;
   err: string;
   onComplete: () => void;
+  onDismiss: () => void;
 }) {
   const [currentBlock, setCurrentBlock] = useState<number | null>(null);
 
@@ -671,6 +673,14 @@ function WithdrawStep2Panel({
       </button>
 
       {err && <p className="font-mono text-[10px] text-red-primary">{err}</p>}
+
+      {/* Dismiss — funds already arrived */}
+      <button
+        onClick={onDismiss}
+        className="w-full text-center font-mono text-[10px] text-muted hover:text-cream-white transition-colors pt-1"
+      >
+        Funds already arrived? · Close this panel
+      </button>
     </div>
   );
 }

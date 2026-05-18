@@ -24,8 +24,8 @@ const FEATURES = [
   },
   {
     tag: "AGENT",
-    title: "Auto Wallet Agent",
-    description: "Deploy a Circle Agent that auto top-ups your wallet or sends USDC to multiple addresses. One EIP-712 signature, zero gas.",
+    title: "Automate USDC Flows",
+    description: "Schedule recurring payouts, auto-split balances by %, or top-up your wallet when it runs low. Set once, runs hands-free. One signature, zero gas.",
     href: "/agent",
     stats: "Gasless · EIP-712",
     isNew: true,
@@ -65,7 +65,8 @@ export default function HomePage() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
 
         {/* ═══ HERO ════════════════════════════════════════════ */}
-        <section className="flex flex-col items-center py-16 text-center sm:py-24">
+        <section className="relative flex flex-col items-center py-16 text-center sm:py-24 overflow-hidden">
+          <Embers />
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[rgba(200,168,122,0.45)] bg-[rgba(245,240,232,0.65)] px-4 py-1.5 backdrop-blur-sm">
             <span className="h-[7px] w-[7px] rounded-full bg-success shadow-[0_0_6px_#2D9B6F]" />
             <span className="font-mono text-xs text-page-muted">Arc Testnet · Chain ID 5042002</span>
@@ -284,6 +285,45 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+    </>
+  );
+}
+
+// ── Embers — sparse floating sparks in hero background ────
+const EMBER_CONFIG = [
+  { size: 2, left: "7%",  bottom: "5%",  delay: "0s",   dur: "12s", color: "rgba(200,168,122,0.6)" },
+  { size: 3, left: "15%", bottom: "10%", delay: "3s",   dur: "15s", color: "rgba(212,149,106,0.5)" },
+  { size: 2, left: "23%", bottom: "3%",  delay: "7s",   dur: "11s", color: "rgba(232,223,192,0.55)" },
+  { size: 2, left: "34%", bottom: "8%",  delay: "1.5s", dur: "14s", color: "rgba(200,168,122,0.45)" },
+  { size: 3, left: "45%", bottom: "2%",  delay: "5s",   dur: "13s", color: "rgba(212,149,106,0.4)" },
+  { size: 2, left: "55%", bottom: "6%",  delay: "9s",   dur: "16s", color: "rgba(232,223,192,0.5)" },
+  { size: 3, left: "64%", bottom: "4%",  delay: "2s",   dur: "12s", color: "rgba(200,168,122,0.55)" },
+  { size: 2, left: "73%", bottom: "9%",  delay: "6s",   dur: "14s", color: "rgba(212,149,106,0.45)" },
+  { size: 2, left: "82%", bottom: "1%",  delay: "4s",   dur: "11s", color: "rgba(232,223,192,0.5)" },
+  { size: 3, left: "91%", bottom: "7%",  delay: "8s",   dur: "15s", color: "rgba(200,168,122,0.4)" },
+  { size: 2, left: "11%", bottom: "15%", delay: "11s",  dur: "13s", color: "rgba(212,149,106,0.35)" },
+  { size: 2, left: "50%", bottom: "12%", delay: "0.5s", dur: "17s", color: "rgba(200,168,122,0.3)" },
+  { size: 3, left: "78%", bottom: "14%", delay: "13s",  dur: "12s", color: "rgba(232,223,192,0.4)" },
+];
+
+function Embers() {
+  return (
+    <>
+      {EMBER_CONFIG.map((e, i) => (
+        <span
+          key={i}
+          className="ember"
+          style={{
+            width:  e.size,
+            height: e.size,
+            left:   e.left,
+            bottom: e.bottom,
+            backgroundColor:   e.color,
+            animationDelay:    e.delay,
+            animationDuration: e.dur,
+          }}
+        />
+      ))}
     </>
   );
 }
