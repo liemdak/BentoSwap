@@ -15,6 +15,7 @@ const CHAINS = [
   { id: "poly", name: "Polygon Amoy",      short: "MATIC", color: "#8247E5", bridgeChain: "Polygon_Amoy_Testnet", chainId: 80002,     rpc: "https://polygon-amoy-bor-rpc.publicnode.com",                  usdc: "0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582", explorer: "https://amoy.polygonscan.com/tx/{hash}" },
   { id: "avax", name: "Avalanche Fuji",    short: "AVAX",  color: "#E84142", bridgeChain: "Avalanche_Fuji",       chainId: 43113,     rpc: "https://avalanche-fuji-c-chain-rpc.publicnode.com",            usdc: "0x5425890298aed601595a70AB815c96711a31Bc65", explorer: "https://subnets-test.avax.network/c-chain/tx/{hash}" },
   { id: "uni",  name: "Unichain Sepolia",  short: "UNI",   color: "#FF007A", bridgeChain: "Unichain_Sepolia",     chainId: 1301,      rpc: "https://sepolia.unichain.org",                                 usdc: "0x31d0220469e10c4E71834a79b1f276d740d3768F", explorer: "https://unichain-sepolia.blockscout.com/tx/{hash}" },
+  { id: "pha",  name: "Pharos Atlantic",   short: "PHA",   color: "#00C9A7", bridgeChain: "Pharos_Testnet",       chainId: 688689,    rpc: "https://atlantic.dplabs-internal.com",                         usdc: "0xcfC8330f4BCAB529c625D12781b1C19466A9Fc8B", explorer: "https://atlantic.pharosscan.xyz/tx/{hash}" },
 ] as const;
 type ChainId = (typeof CHAINS)[number]["id"];
 
@@ -409,6 +410,7 @@ const CHAIN_ICON: Record<string, string> = {
   poly: "/chains/Polygon%20Amoy.png",
   avax: "/chains/Avalanche%20Fuji.png",
   uni:  "/chains/Unichain%20Sepolia.jpg",
+  pha:  "/chains/pharos.png",
 };
 
 function ChainImg({ id, color, size = 22 }: { id: string; color: string; size?: number }) {
