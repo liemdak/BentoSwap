@@ -410,7 +410,7 @@ const CHAIN_ICON: Record<string, string> = {
   poly: "/chains/Polygon%20Amoy.png",
   avax: "/chains/Avalanche%20Fuji.png",
   uni:  "/chains/Unichain%20Sepolia.jpg",
-  pha:  "/chains/pharos.png",
+  pha:  "/chains/pharos.jpg",
 };
 
 function ChainImg({ id, color, size = 22 }: { id: string; color: string; size?: number }) {
