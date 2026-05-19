@@ -415,21 +415,17 @@ const CHAIN_ICON: Record<string, string> = {
 
 function ChainImg({ id, color, size = 22 }: { id: string; color: string; size?: number }) {
   const src = CHAIN_ICON[id];
-  return src ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={id} width={size} height={size}
-      className="rounded-full object-cover flex-shrink-0"
-      style={{ width: size, height: size }}
-      onError={e => {
-        const t = e.currentTarget as HTMLImageElement;
-        t.style.display = "none";
-        const s = t.nextElementSibling as HTMLElement | null;
-        if (s) s.style.display = "inline-block";
-      }}
-    />
-  ) : (
-    <span className="rounded-full flex-shrink-0 inline-block"
-      style={{ width: size, height: size, backgroundColor: color }} />
+  return (
+    <span className="relative flex-shrink-0 inline-block rounded-full"
+      style={{ width: size, height: size, backgroundColor: color }}>
+      {src && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt={id} width={size} height={size}
+          className="rounded-full object-cover absolute inset-0 w-full h-full"
+          onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+        />
+      )}
+    </span>
   );
 }
 
