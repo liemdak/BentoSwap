@@ -6,6 +6,7 @@ import { useWallet } from "@/context/WalletContext";
 import { ARC_CHAIN_ID } from "@/lib/chains";
 import { useChainUsdcBalance } from "@/hooks/useChainUsdcBalance";
 import { useGatewayBalance } from "@/hooks/useGatewayBalance";
+import { useArcTokenBalance } from "@/hooks/useTokenBalance";
 import { kit } from "@/lib/kit";
 
 // ── Chain config ────────────────────────────────────────────
@@ -413,6 +414,12 @@ export default function BalanceDashboard() {
   const grandTotal = walletTotal + gwTotal;
   const isLoading  = (gwLoading || walletLoading) && grandTotal === 0;
 
+  // cirBTC balance on Arc Testnet
+  const { balance: cirBtcBalance, loading: cirBtcLoading } = useArcTokenBalance(
+    isConnected ? address : null,
+    "cirBTC",
+  );
+
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4">
 
@@ -500,6 +507,61 @@ export default function BalanceDashboard() {
           )}
         </div>
       </div>
+
+      {/* ══ OTHER TOKENS on Arc Testnet ════════════════════════ */}
+      {isConnected && (
+        <div className="rounded-card2 border border-ink-border bg-ink-surface p-4 shadow-card sm:p-5">
+          <div className="mb-3 flex items-center gap-3">
+            <span className="font-mono text-xs tracking-widest text-muted">{"// OTHER TOKENS"}</span>
+            <span className="font-mono text-[10px] text-muted">Arc Testnet</span>
+          </div>
+
+          {/* cirBTC row */}
+          <div className="rounded-card border border-ink-border2 bg-ink-surface2 p-3">
+            <div className="flex items-center gap-3">
+              {/* Bitcoin icon */}
+              <span className="flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-[#F7931A]">
+                <svg width="14" height="14" viewBox="0 0 32 32" fill="none">
+                  <path d="M22.5 14.2c.3-2-1.2-3.1-3.3-3.8l.7-2.7-1.7-.4-.7 2.6-.9-.2.7-2.7-1.7-.4-.7 2.7-2.2-.5-.4 1.8 1.2.3c.7.2.8.6.8.9l-1.9 7.5c-.1.3-.4.7-1 .6l-1.2-.3-.5 1.9 2.1.5-.7 2.8 1.7.4.7-2.8.9.2-.7 2.8 1.7.4.7-2.8c2.8.5 4.9.3 5.8-2.2.7-2-.1-3.2-1.5-3.9 1-.3 1.8-1 2-2.7zm-3.5 5c-.5 2-3.9.9-5 .7l.9-3.5c1.1.3 4.6.8 4.1 2.8zm.5-5c-.5 1.8-3.3.9-4.3.7l.8-3.2c1 .2 4.1.7 3.5 2.5z" fill="white"/>
+                </svg>
+              </span>
+
+              <div className="flex-1">
+                <p className="font-mono text-sm font-medium text-cream-white">cirBTC</p>
+                <p className="font-mono text-[10px] text-muted">Circle Wrapped Bitcoin</p>
+              </div>
+
+              {/* Balance */}
+              <div className="text-right">
+                <p className="font-mono text-sm text-cream-white">
+                  {cirBtcLoading && cirBtcBalance === "0.00"
+                    ? <span className="animate-pulse text-muted">…</span>
+                    : cirBtcBalance !== null
+                      ? <span className={parseFloat(cirBtcBalance) > 0 ? "text-success" : "text-cream-dim"}>
+                          {parseFloat(cirBtcBalance).toLocaleString(undefined, { maximumFractionDigits: 8 })} cirBTC
+                        </span>
+                      : <span className="text-muted">—</span>
+                  }
+                </p>
+                {cirBtcBalance !== null && parseFloat(cirBtcBalance) > 0 && (
+                  <p className="font-mono text-[10px] text-muted">
+                    ≈ ${(parseFloat(cirBtcBalance) * 100_000).toLocaleString("en-US", { maximumFractionDigits: 2 })} USD
+                  </p>
+                )}
+              </div>
+
+              {/* Tag */}
+              <span className="rounded border border-orange-400/30 bg-orange-400/5 px-2 py-0.5 font-mono text-[10px] text-orange-400">
+                Arc only
+              </span>
+            </div>
+          </div>
+
+          <p className="mt-2 font-mono text-[10px] text-muted">
+            Non-USDC tokens are held in your wallet — not depositable to Circle Gateway
+          </p>
+        </div>
+      )}
 
       {/* ══ HOW IT WORKS — compact horizontal ══════════════════ */}
       <div className="rounded-card2 border border-ink-border bg-ink-surface px-4 py-3 sm:px-5">
