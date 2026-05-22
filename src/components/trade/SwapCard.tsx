@@ -8,17 +8,19 @@ import { ARC_CHAIN_ID } from "@/lib/chains";
 
 // ── Tokens ────────────────────────────────────────────────
 const TOKENS = [
-  { symbol: "USDC", name: "USD Coin",       dotClass: "bg-blue-400" },
-  { symbol: "EURC", name: "Euro Coin",      dotClass: "bg-green-500" },
-  { symbol: "USYC", name: "US Yield Coin",  dotClass: "bg-purple-500" },
+  { symbol: "USDC",   name: "USD Coin",          dotClass: "bg-blue-400"   },
+  { symbol: "EURC",   name: "Euro Coin",          dotClass: "bg-green-500"  },
+  { symbol: "USYC",   name: "US Yield Coin",      dotClass: "bg-purple-500" },
+  { symbol: "cirBTC", name: "Circle Wrapped BTC", dotClass: "bg-orange-400" },
 ] as const;
 type TokenSymbol = (typeof TOKENS)[number]["symbol"];
 
-// Mock rates (replaced by real estimate below)
+// BTC ≈ 100,000 USDC (testnet reference rate)
 const MOCK_RATES: Record<string, Record<string, number>> = {
-  USDC: { EURC: 0.9234, USYC: 0.9981, USDC: 1 },
-  EURC: { USDC: 1.0829, USYC: 1.0810, EURC: 1 },
-  USYC: { USDC: 1.0019, EURC: 0.9252, USYC: 1 },
+  USDC:   { EURC: 0.9234,    USYC: 0.9981,    USDC: 1,       cirBTC: 0.00001      },
+  EURC:   { USDC: 1.0829,    USYC: 1.0810,    EURC: 1,       cirBTC: 0.0000108    },
+  USYC:   { USDC: 1.0019,    EURC: 0.9252,    USYC: 1,       cirBTC: 0.00001002   },
+  cirBTC: { USDC: 100_000,   EURC: 92_340,    USYC: 99_810,  cirBTC: 1            },
 };
 
 const SLIPPAGE_OPTIONS = ["0.1", "0.5", "1.0"] as const;
@@ -47,9 +49,10 @@ export default function SwapCard() {
 
   const activeSlippage = showCustomSlippage ? customSlippage : slippage;
   const rate = MOCK_RATES[fromToken][toToken];
-  const toAmount  = fromAmount ? (parseFloat(fromAmount) * rate).toFixed(4) : "";
+  const outDecimals = toToken === "cirBTC" ? 8 : 4;
+  const toAmount  = fromAmount ? (parseFloat(fromAmount) * rate).toFixed(outDecimals) : "";
   const minReceived = toAmount
-    ? (parseFloat(toAmount) * (1 - parseFloat(activeSlippage || "0.5") / 100)).toFixed(4)
+    ? (parseFloat(toAmount) * (1 - parseFloat(activeSlippage || "0.5") / 100)).toFixed(outDecimals)
     : "—";
 
   const onArc = chainId === ARC_CHAIN_ID;
@@ -397,6 +400,12 @@ function TokenIcon({ symbol, size = 20 }: { symbol: TokenSymbol; size?: number }
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
       <circle cx="16" cy="16" r="16" fill="#2775CA"/>
       <path d="M20.5 10.5C18.8 9.2 16.7 8.8 14.8 9.4c-2.6.8-4.5 3.2-4.8 5.9H9v1.4h1c0 .3 0 .5.1.8H9v1.4h1.2c.6 2.5 2.5 4.5 5 5.1 1.8.4 3.7 0 5.2-1.1l-1-1.4c-1.1.8-2.5 1.1-3.9.8-1.6-.4-2.9-1.6-3.5-3.4H18v-1.4h-5.3c0-.3-.1-.5-.1-.8H18v-1.4h-5.1c.3-1.9 1.6-3.5 3.3-4 1.4-.4 2.9-.1 4 .8l1.3-1.1z" fill="white"/>
+    </svg>
+  );
+  if (symbol === "cirBTC") return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="16" fill="#F7931A"/>
+      <path d="M22.5 14.2c.3-2-1.2-3.1-3.3-3.8l.7-2.7-1.7-.4-.7 2.6-.9-.2.7-2.7-1.7-.4-.7 2.7-2.2-.5-.4 1.8 1.2.3c.7.2.8.6.8.9l-1.9 7.5c-.1.3-.4.7-1 .6l-1.2-.3-.5 1.9 2.1.5-.7 2.8 1.7.4.7-2.8.9.2-.7 2.8 1.7.4.7-2.8c2.8.5 4.9.3 5.8-2.2.7-2-.1-3.2-1.5-3.9 1-.3 1.8-1 2-2.7zm-3.5 5c-.5 2-3.9.9-5 .7l.9-3.5c1.1.3 4.6.8 4.1 2.8zm.5-5c-.5 1.8-3.3.9-4.3.7l.8-3.2c1 .2 4.1.7 3.5 2.5z" fill="white"/>
     </svg>
   );
   // USYC
