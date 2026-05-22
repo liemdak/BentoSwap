@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useWallet } from "@/context/WalletContext";
-import { useArcUsdcBalance } from "@/hooks/useTokenBalance";
+import { useArcTokenBalance } from "@/hooks/useTokenBalance";
 import { kit, CIRCLE_API_KEY } from "@/lib/kit";
 import { ARC_CHAIN_ID } from "@/lib/chains";
 
@@ -30,10 +30,11 @@ type SwapStatus = "idle" | "swapping" | "success" | "error";
 // ─────────────────────────────────────────────────────────
 export default function SwapCard() {
   const { address, adapter, chainId, isConnected, switchToArc } = useWallet();
-  const { balance, refresh: refreshBalance } = useArcUsdcBalance(address);
 
   const [fromToken, setFromToken] = useState<TokenSymbol>("USDC");
   const [toToken,   setToToken]   = useState<TokenSymbol>("EURC");
+
+  const { balance: fromBalance, loading: fromBalanceLoading, refresh: refreshBalance } = useArcTokenBalance(address, fromToken);
   const [fromAmount, setFromAmount] = useState("");
   const [slippage,  setSlippage]  = useState("0.5");
   const [customSlippage, setCustomSlippage] = useState("");
@@ -59,10 +60,11 @@ export default function SwapCard() {
 
   const setQuickAmount = useCallback(
     (pct: number) => {
-      const bal = parseFloat(balance) || 0;
-      setFromAmount(pct === 100 ? bal.toFixed(6) : ((bal * pct) / 100).toFixed(2));
+      const bal = parseFloat(fromBalance ?? "0") || 0;
+      const decimals = fromToken === "cirBTC" ? 8 : 6;
+      setFromAmount(pct === 100 ? bal.toFixed(decimals) : ((bal * pct) / 100).toFixed(decimals));
     },
-    [balance]
+    [fromBalance, fromToken]
   );
 
   const flipTokens = () => {
@@ -188,12 +190,16 @@ export default function SwapCard() {
             <div className="rounded-card border border-ink-border2 bg-ink-surface2 p-4">
               <div className="mb-3 flex items-center justify-between">
                 <span className="font-mono text-[11px] text-muted">FROM</span>
-                <button
-                  className="font-mono text-[11px] text-muted hover:text-cream-white transition-colors"
-                  onClick={() => setFromAmount(balance)}
-                >
-                  Balance: {parseFloat(balance).toLocaleString()} {fromToken}
-                </button>
+                {fromBalance !== null ? (
+                  <button
+                    className="font-mono text-[11px] text-muted hover:text-cream-white transition-colors"
+                    onClick={() => setFromAmount(fromBalance)}
+                  >
+                    {fromBalanceLoading ? "Loading…" : `Balance: ${parseFloat(fromBalance).toLocaleString(undefined, { maximumFractionDigits: fromToken === "cirBTC" ? 8 : 4 })} ${fromToken}`}
+                  </button>
+                ) : (
+                  <span className="font-mono text-[11px] text-muted">Balance: —</span>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <div className="relative">
@@ -208,8 +214,17 @@ export default function SwapCard() {
                   {fromSelector && (
                     <TokenDropdown
                       current={fromToken}
-                      exclude={toToken}
-                      onSelect={(t) => { setFromToken(t); setFromSelector(false); }}
+                      onSelect={(t) => {
+                        if (t === toToken) {
+                          // Auto-swap tokens
+                          setFromToken(toToken);
+                          setToToken(fromToken);
+                          setFromAmount(toAmount);
+                        } else {
+                          setFromToken(t);
+                        }
+                        setFromSelector(false);
+                      }}
                     />
                   )}
                 </div>
@@ -426,10 +441,10 @@ function ChevronIcon() {
   );
 }
 
-function TokenDropdown({ current, exclude, onSelect }: { current: TokenSymbol; exclude: TokenSymbol; onSelect: (t: TokenSymbol) => void }) {
+function TokenDropdown({ current, exclude, onSelect }: { current: TokenSymbol; exclude?: TokenSymbol; onSelect: (t: TokenSymbol) => void }) {
   return (
     <div className="absolute left-0 top-full z-50 mt-1 w-44 rounded-card border border-ink-border2 bg-ink-surface shadow-xl">
-      {TOKENS.filter((t) => t.symbol !== exclude).map((t) => (
+      {TOKENS.filter((t) => !exclude || t.symbol !== exclude).map((t) => (
         <button
           key={t.symbol}
           onClick={() => onSelect(t.symbol as TokenSymbol)}
