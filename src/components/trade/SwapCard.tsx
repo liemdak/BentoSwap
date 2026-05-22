@@ -124,9 +124,7 @@ export default function SwapCard() {
     setFromAmount("");
   };
 
-  // cirBTC swap route not yet live on Arc Testnet
-  const isCirBtcPair = fromToken === "cirBTC" || toToken === "cirBTC";
-  const canSwap = isConnected && onArc && fromToken !== toToken && !!fromAmount && parseFloat(fromAmount) > 0 && !isCirBtcPair;
+  const canSwap = isConnected && onArc && fromToken !== toToken && !!fromAmount && parseFloat(fromAmount) > 0;
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -362,25 +360,6 @@ export default function SwapCard() {
               >
                 Switch to Arc Testnet
               </button>
-            ) : isCirBtcPair ? (
-              <div className="mt-4 space-y-2">
-                <div className="rounded-card border border-orange-400/30 bg-orange-400/5 p-3 flex items-start gap-2.5">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="flex-shrink-0 mt-0.5 text-orange-400">
-                    <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5"/>
-                    <path d="M7 4v3M7 10h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                  <div>
-                    <p className="font-mono text-xs text-orange-400">cirBTC swap route not available yet</p>
-                    <p className="mt-0.5 font-mono text-[10px] text-muted">Circle is rolling out cirBTC liquidity on Arc Testnet. Check back soon.</p>
-                  </div>
-                </div>
-                <button
-                  disabled
-                  className="w-full rounded-lg py-3.5 font-body text-base font-medium cursor-not-allowed bg-ink-border2 text-muted"
-                >
-                  Route not available — Coming soon
-                </button>
-              </div>
             ) : (
               <button
                 disabled={!canSwap || status === "swapping"}
@@ -449,35 +428,27 @@ function ChevronIcon() {
 
 function TokenDropdown({ current, exclude, onSelect }: { current: TokenSymbol; exclude: TokenSymbol; onSelect: (t: TokenSymbol) => void }) {
   return (
-    <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-card border border-ink-border2 bg-ink-surface shadow-xl">
-      {TOKENS.filter((t) => t.symbol !== exclude).map((t) => {
-        const isSoon = t.symbol === "cirBTC";
-        return (
-          <button
-            key={t.symbol}
-            onClick={() => onSelect(t.symbol as TokenSymbol)}
-            className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-ink-surface2 ${
-              t.symbol === current ? "bg-ink-surface2" : ""
-            }`}
-          >
-            <TokenIcon symbol={t.symbol as TokenSymbol} size={24} />
-            <div className="flex-1 min-w-0">
-              <div className={`flex items-center gap-1.5 font-mono text-sm font-medium ${t.symbol === current ? "text-red-primary" : "text-cream-white"}`}>
-                {t.symbol}
-                {isSoon && (
-                  <span className="rounded bg-orange-400/20 px-1 py-0.5 font-mono text-[8px] font-bold uppercase text-orange-400 leading-none">
-                    SOON
-                  </span>
-                )}
-              </div>
-              <div className="font-body text-[10px] text-muted">{t.name}</div>
+    <div className="absolute left-0 top-full z-50 mt-1 w-44 rounded-card border border-ink-border2 bg-ink-surface shadow-xl">
+      {TOKENS.filter((t) => t.symbol !== exclude).map((t) => (
+        <button
+          key={t.symbol}
+          onClick={() => onSelect(t.symbol as TokenSymbol)}
+          className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-ink-surface2 ${
+            t.symbol === current ? "bg-ink-surface2" : ""
+          }`}
+        >
+          <TokenIcon symbol={t.symbol as TokenSymbol} size={24} />
+          <div>
+            <div className={`font-mono text-sm font-medium ${t.symbol === current ? "text-red-primary" : "text-cream-white"}`}>
+              {t.symbol}
             </div>
-            {t.symbol === current && (
-              <span className="ml-auto font-mono text-[10px] text-red-primary">✓</span>
-            )}
-          </button>
-        );
-      })}
+            <div className="font-body text-[10px] text-muted">{t.name}</div>
+          </div>
+          {t.symbol === current && (
+            <span className="ml-auto font-mono text-[10px] text-red-primary">✓</span>
+          )}
+        </button>
+      ))}
     </div>
   );
 }
