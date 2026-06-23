@@ -169,27 +169,48 @@ export interface DecodedMemo {
   memoIndex: string;
 }
 
+// Arc RPC caps eth_getLogs at a 10,000-block range per request.
+const MAX_LOG_RANGE = BigInt(9_000);
+
 /**
  * Read recent `Memo` events emitted by the Memo contract, optionally filtered
- * to a given sender. Scans the last `lookbackBlocks` blocks.
+ * to a given sender. Scans backwards from the latest block in ≤10k-block
+ * chunks (RPC limit), stopping once `limit` events are collected or the
+ * `lookbackBlocks` budget is exhausted.
  */
 export async function readRecentMemos(opts: {
   sender?: string;
   lookbackBlocks?: bigint;
+  limit?: number;
 } = {}): Promise<DecodedMemo[]> {
   const latest = await publicClient.getBlockNumber();
-  const lookback = opts.lookbackBlocks ?? BigInt(50000);
-  const fromBlock = latest > lookback ? latest - lookback : BigInt(0);
+  const lookback = opts.lookbackBlocks ?? BigInt(120_000);
+  const floor = latest > lookback ? latest - lookback : BigInt(0);
+  const limit = opts.limit ?? 25;
+  const sender = opts.sender ? getAddress(opts.sender) : undefined;
 
-  const logs = await publicClient.getLogs({
-    address: MEMO_CONTRACT,
-    event: MEMO_ABI[2], // the Memo event
-    args: opts.sender ? { sender: getAddress(opts.sender) } : undefined,
-    fromBlock,
-    toBlock: latest,
-  });
+  const fetchChunk = (fromBlock: bigint, toBlock: bigint) =>
+    publicClient.getLogs({
+      address: MEMO_CONTRACT,
+      event: MEMO_ABI[2], // the Memo event
+      args: sender ? { sender } : undefined,
+      fromBlock,
+      toBlock,
+    });
+  type MemoLog = Awaited<ReturnType<typeof fetchChunk>>[number];
+  const collected: MemoLog[] = [];
 
-  return logs
+  // Walk backwards in chunks so we never exceed the RPC range cap.
+  let toBlock = latest;
+  while (toBlock >= floor && collected.length < limit) {
+    const fromBlock = toBlock > floor + MAX_LOG_RANGE ? toBlock - MAX_LOG_RANGE : floor;
+    const chunk = await fetchChunk(fromBlock, toBlock);
+    collected.push(...chunk);
+    if (fromBlock === floor) break;
+    toBlock = fromBlock - BigInt(1);
+  }
+
+  return collected
     .map((log) => {
       const args = log.args as {
         sender: string;
@@ -206,8 +227,8 @@ export async function readRecentMemos(opts: {
         /* keep raw hex */
       }
       return {
-        txHash: log.transactionHash,
-        blockNumber: log.blockNumber,
+        txHash: log.transactionHash ?? "",
+        blockNumber: log.blockNumber ?? BigInt(0),
         sender: args.sender,
         target: args.target,
         callDataHash: args.callDataHash,
