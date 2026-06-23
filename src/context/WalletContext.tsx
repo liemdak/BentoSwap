@@ -22,6 +22,7 @@ interface WalletState {
   walletId: string | null;
   walletName: string | null;
   adapter: ViemAdapter | null;
+  rawProvider: unknown;
   connect: (walletId: string) => Promise<void>;
   disconnect: () => void;
   switchToArc: () => Promise<void>;
@@ -220,6 +221,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         walletId,
         walletName,
         adapter,
+        rawProvider,
         connect,
         disconnect,
         switchToArc,

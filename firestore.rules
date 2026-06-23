@@ -1,0 +1,60 @@
+rules_version = '2';
+
+// ============================================================================
+// Bento — Firestore Security Rules
+//
+// HOW TO APPLY:
+//   1. Go to https://console.firebase.google.com  (do NOT click links in email)
+//   2. Project "Bento-daap" → Build → Firestore Database → Rules tab
+//   3. Paste this entire file, then click "Publish"
+//
+// WHAT THIS DOES:
+//   - Replaces the expiring "test mode" (open-to-the-internet) rules.
+//   - Locks access to ONLY the `bento-tasks` collection used by the app.
+//   - Validates document shape so the collection can't be filled with junk.
+//   - Denies every other path by default.
+//
+// KNOWN LIMITATION (read this):
+//   Bento writes directly from the browser, keyed by wallet address, with NO
+//   Firebase Auth. That means these rules CANNOT prove the caller actually owns
+//   the wallet address in the document id — any client can still write to any
+//   wallet's document. This is acceptable for a TESTNET demo (data is only
+//   non-sensitive agent-task config; no funds, no private keys).
+//
+//   For production, do ONE of:
+//     (a) Move writes server-side via a Next.js API route + Firebase Admin SDK
+//         (service account key, server-only), and set rules to: allow read,
+//         write: if false;  (client never touches Firestore directly), OR
+//     (b) Add wallet-signature verification (sign a nonce, verify in a Cloud
+//         Function / API route before writing), OR
+//     (c) Add Firebase Auth and gate writes on request.auth.uid.
+// ============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Agent tasks: one document per wallet address ---------------------
+    // Document id is the lowercased wallet address (see firebaseTasks.ts).
+    match /bento-tasks/{walletId} {
+
+      // Public read: task config is non-sensitive (testnet demo).
+      allow read: if true;
+
+      // Writes must match the shape the app actually saves.
+      allow write: if isValidTaskDoc();
+    }
+
+    // --- Everything else: denied ------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// Validates the { tasks: [...], updatedAt: string } document the client writes.
+function isValidTaskDoc() {
+  return request.resource.data.keys().hasOnly(['tasks', 'updatedAt'])
+      && request.resource.data.tasks is list
+      && request.resource.data.tasks.size() <= 100
+      && request.resource.data.updatedAt is string;
+}

@@ -5,6 +5,7 @@ import { useWallet } from "@/context/WalletContext";
 import { useArcUsdcBalance } from "@/hooks/useTokenBalance";
 import { kit } from "@/lib/kit";
 import { ARC_CHAIN_ID } from "@/lib/chains";
+import { sendWithMemo, isMemoSupportedToken } from "@/lib/memo";
 
 const TOKENS = ["USDC", "EURC", "USYC"] as const;
 type TokenSymbol = (typeof TOKENS)[number];
@@ -14,6 +15,8 @@ interface Recipient {
   address: string;
   amount: string;
   token: TokenSymbol;
+  memo: string;       // optional Arc transaction memo (invoice id, note, …)
+  showMemo: boolean;  // UI: memo input expanded
 }
 
 interface SendResult {
@@ -29,11 +32,11 @@ const NETWORK_FEE_PER_TX = 0.001; // USDC per tx (estimate)
 let nextId = 1;
 
 export default function MultiSendCard() {
-  const { address, adapter, chainId, isConnected, switchToArc } = useWallet();
+  const { address, adapter, rawProvider, chainId, isConnected, switchToArc } = useWallet();
   const { balance, refresh: refreshBalance } = useArcUsdcBalance(address);
 
   const [recipients, setRecipients] = useState<Recipient[]>([
-    { id: nextId++, address: "", amount: "", token: "USDC" },
+    { id: nextId++, address: "", amount: "", token: "USDC", memo: "", showMemo: false },
   ]);
   const [sending,  setSending]  = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
@@ -43,14 +46,17 @@ export default function MultiSendCard() {
 
   const totalAmount = recipients.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
   const totalFee    = recipients.length * NETWORK_FEE_PER_TX;
+  // A memo on a token that doesn't support memos (e.g. USYC) is invalid.
+  const hasBadMemo = (r: Recipient) => !!r.memo.trim() && !isMemoSupportedToken(r.token);
   const validRecipients = recipients.filter(
-    (r) => r.address.startsWith("0x") && r.address.length === 42 && r.amount && parseFloat(r.amount) > 0
+    (r) => r.address.startsWith("0x") && r.address.length === 42 && r.amount && parseFloat(r.amount) > 0 && !hasBadMemo(r)
   );
   const validCount = validRecipients.length;
+  const memoCount  = validRecipients.filter((r) => r.memo.trim()).length;
 
   const addRecipient = () => {
     if (recipients.length >= 20) return;
-    setRecipients((prev) => [...prev, { id: nextId++, address: "", amount: "", token: "USDC" }]);
+    setRecipients((prev) => [...prev, { id: nextId++, address: "", amount: "", token: "USDC", memo: "", showMemo: false }]);
   };
 
   const removeRecipient = (id: number) => {
@@ -58,11 +64,15 @@ export default function MultiSendCard() {
     setRecipients((prev) => prev.filter((r) => r.id !== id));
   };
 
-  const updateRecipient = (id: number, field: keyof Recipient, value: string) => {
+  const updateRecipient = (id: number, field: "address" | "amount" | "token" | "memo", value: string) => {
     setRecipients((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
   };
 
-  // ── Real kit.send() loop ───────────────────────────────────
+  const toggleMemo = (id: number) => {
+    setRecipients((prev) => prev.map((r) => (r.id === id ? { ...r, showMemo: !r.showMemo } : r)));
+  };
+
+  // ── Send loop: memo recipients route through the Memo contract ──
   const handleSend = async () => {
     if (!adapter || validCount === 0) return;
 
@@ -70,17 +80,34 @@ export default function MultiSendCard() {
     setProgress(0);
     setResults([]);
 
+    const provider = rawProvider as { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> } | null;
+
     for (let i = 0; i < validRecipients.length; i++) {
       const r = validRecipients[i];
       setProgress(i);
 
       try {
-        const result = await kit.send({
-          from: { adapter, chain: "Arc_Testnet" },
-          to: r.address,
-          amount: r.amount,
-          token: r.token,
-        });
+        const useMemo = !!r.memo.trim();
+        let result: { txHash?: string; explorerUrl?: string };
+
+        if (useMemo) {
+          if (!provider || !address) throw new Error("Wallet provider unavailable for memo send");
+          result = await sendWithMemo({
+            provider,
+            from: address,
+            token: r.token,
+            to: r.address,
+            amount: r.amount,
+            memo: r.memo.trim(),
+          });
+        } else {
+          result = await kit.send({
+            from: { adapter, chain: "Arc_Testnet" },
+            to: r.address,
+            amount: r.amount,
+            token: r.token,
+          });
+        }
 
         setResults((prev) => [
           ...prev,
@@ -226,6 +253,53 @@ export default function MultiSendCard() {
                     ))}
                   </select>
                 </div>
+
+                {/* ── Memo (optional) ── */}
+                <div className="mt-2">
+                  {!r.showMemo ? (
+                    <button
+                      onClick={() => toggleMemo(r.id)}
+                      disabled={sending}
+                      className="flex items-center gap-1 font-mono text-[10px] text-muted hover:text-cream-white transition-colors disabled:opacity-40"
+                    >
+                      <span className="text-xs leading-none">+</span> Add memo
+                      <span className="text-ink-border2">· invoice id / note</span>
+                    </button>
+                  ) : (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={r.memo}
+                          onChange={(e) => updateRecipient(r.id, "memo", e.target.value)}
+                          placeholder="invoice-2026-0001"
+                          disabled={sending}
+                          maxLength={120}
+                          className="min-w-0 flex-1 rounded border border-[#C8A87A]/30 bg-black px-2.5 py-1.5 font-mono text-[11px] text-cream-white placeholder:text-muted focus:border-[#C8A87A]/60 focus:outline-none disabled:opacity-50"
+                        />
+                        <button
+                          onClick={() => { updateRecipient(r.id, "memo", ""); toggleMemo(r.id); }}
+                          disabled={sending}
+                          className="rounded p-1 text-muted hover:text-red-primary transition-colors disabled:opacity-40"
+                          title="Remove memo"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                          </svg>
+                        </button>
+                      </div>
+                      {hasBadMemo(r) ? (
+                        <p className="font-mono text-[9px] text-red-primary">
+                          {r.token} doesn&apos;t support memos on Arc — use USDC or EURC, or clear the memo
+                        </p>
+                      ) : (
+                        <p className="font-mono text-[9px] text-muted">
+                          Attaches an on-chain memo via Arc&apos;s Memo contract (msg.sender preserved)
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -337,6 +411,14 @@ export default function MultiSendCard() {
                 {(totalAmount + totalFee).toFixed(3)} USDC
               </span>
             </div>
+            {memoCount > 0 && (
+              <div className="mt-1.5 flex items-center gap-1.5 border-t border-ink-border pt-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#C8A87A]" />
+                <span className="font-mono text-[10px] text-[#C8A87A]">
+                  {memoCount} transfer{memoCount > 1 ? "s" : ""} carry an on-chain memo
+                </span>
+              </div>
+            )}
           </div>
         )}
 
