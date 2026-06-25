@@ -7,6 +7,7 @@ import {
   stringToHex,
   hexToString,
   parseUnits,
+  formatUnits,
   parseEventLogs,
   getAddress,
   type Abi,
@@ -239,4 +240,89 @@ export async function readRecentMemos(opts: {
       };
     })
     .sort((a, b) => Number(b.blockNumber - a.blockNumber));
+}
+
+// Reverse-lookup a token symbol/decimals from its Arc Testnet address.
+function tokenByAddress(addr: string): { symbol: string; decimals: number } | null {
+  const a = addr.toLowerCase();
+  for (const [symbol, info] of Object.entries(MEMO_TOKENS)) {
+    if (info.address.toLowerCase() === a) return { symbol, decimals: info.decimals };
+  }
+  return null;
+}
+
+export interface MemoReceipt {
+  txHash: string;
+  blockNumber: bigint;
+  status: "success" | "reverted";
+  sender: string;          // original wallet (msg.sender preserved)
+  tokenAddress: string;    // the Memo target = token contract
+  tokenSymbol: string | null;
+  amount: string | null;   // human-readable, from the paired Transfer event
+  to: string | null;       // recipient, from the Transfer event
+  memoId: string;
+  memo: string;            // decoded UTF-8 (best effort)
+  memoRaw: string;         // raw hex
+  memoIndex: string;
+  explorerUrl: string;
+}
+
+/**
+ * Decode the memo(s) of a single transaction by its hash. Pairs each `Memo`
+ * event with the matching ERC-20 `Transfer` in the same tx to recover the
+ * amount and recipient. Returns [] if the tx has no memo (e.g. a plain send).
+ */
+export async function readMemoByTx(txHash: string): Promise<MemoReceipt[]> {
+  const hash = txHash.trim() as `0x${string}`;
+  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) {
+    throw new Error("Invalid transaction hash");
+  }
+
+  const receipt = await publicClient.getTransactionReceipt({ hash });
+
+  const memoEvents = parseEventLogs({ abi: MEMO_ABI, eventName: "Memo", logs: receipt.logs });
+  const transferEvents = parseEventLogs({ abi: erc20Abi, eventName: "Transfer", logs: receipt.logs });
+
+  return memoEvents.map((ev, i) => {
+    const a = ev.args as {
+      sender: string;
+      target: string;
+      callDataHash: string;
+      memoId: string;
+      memo: string;
+      memoIndex: bigint;
+    };
+    let memoText = a.memo;
+    try {
+      memoText = hexToString(a.memo as `0x${string}`);
+    } catch {
+      /* keep raw hex */
+    }
+
+    const tokenInfo = tokenByAddress(a.target);
+    const transfer = transferEvents[i];
+    let amount: string | null = null;
+    let to: string | null = null;
+    if (transfer) {
+      const t = transfer.args as { from: string; to: string; value: bigint };
+      to = t.to;
+      amount = tokenInfo ? formatUnits(t.value, tokenInfo.decimals) : t.value.toString();
+    }
+
+    return {
+      txHash: hash,
+      blockNumber: receipt.blockNumber,
+      status: receipt.status,
+      sender: a.sender,
+      tokenAddress: a.target,
+      tokenSymbol: tokenInfo?.symbol ?? null,
+      amount,
+      to,
+      memoId: a.memoId,
+      memo: memoText,
+      memoRaw: a.memo,
+      memoIndex: a.memoIndex.toString(),
+      explorerUrl: `https://testnet.arcscan.app/tx/${hash}`,
+    };
+  });
 }

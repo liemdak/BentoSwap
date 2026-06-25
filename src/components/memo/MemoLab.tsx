@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useWallet } from "@/context/WalletContext";
 import { ARC_CHAIN_ID } from "@/lib/chains";
 import {
@@ -17,8 +19,13 @@ const MEMO_TOKEN_LIST = Object.keys(MEMO_TOKENS); // USDC, EURC, cirBTC
 type SendState = "idle" | "sending" | "done" | "error";
 
 export default function MemoLab() {
+  const router = useRouter();
   const { address, rawProvider, chainId, isConnected, switchToArc } = useWallet();
   const onArc = chainId === ARC_CHAIN_ID;
+
+  const [lookupTx, setLookupTx] = useState("");
+  const lookupValid = /^0x[0-9a-fA-F]{64}$/.test(lookupTx.trim());
+  const goToReceipt = () => { if (lookupValid) router.push(`/memo/${lookupTx.trim()}`); };
 
   const [token,  setToken]  = useState("USDC");
   const [to,     setTo]     = useState("");
@@ -175,6 +182,33 @@ export default function MemoLab() {
         )}
       </div>
 
+      {/* ── Look up one transaction's memo ── */}
+      <div className="rounded-card2 border border-ink-border bg-ink-surface p-5 shadow-card">
+        <div className="mb-1 font-mono text-xs tracking-widest text-red-primary">{"// LOOK UP A TRANSACTION"}</div>
+        <p className="mb-3 font-body text-xs text-muted">
+          Paste a tx hash to open its shareable memo receipt — readable text, not hex.
+        </p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={lookupTx}
+            onChange={(e) => setLookupTx(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") goToReceipt(); }}
+            placeholder="0x… transaction hash"
+            className="min-w-0 flex-1 rounded border border-ink-border2 bg-black px-3 py-2.5 font-mono text-xs text-cream-white placeholder:text-muted focus:border-red-primary/50 focus:outline-none"
+          />
+          <button
+            onClick={goToReceipt}
+            disabled={!lookupValid}
+            className={`flex-shrink-0 rounded-lg px-4 py-2.5 font-mono text-xs transition-colors ${
+              lookupValid ? "bg-red-primary text-white hover:bg-red-dim" : "cursor-not-allowed bg-ink-border2 text-muted"
+            }`}
+          >
+            Open receipt
+          </button>
+        </div>
+      </div>
+
       {/* ── Read memo events ── */}
       <div className="rounded-card2 border border-ink-border bg-ink-surface p-5 shadow-card">
         <div className="mb-1 flex items-center justify-between">
@@ -220,10 +254,16 @@ export default function MemoLab() {
                   <div>from {m.sender.slice(0, 8)}…{m.sender.slice(-6)} → target {m.target.slice(0, 8)}…{m.target.slice(-6)}</div>
                   <div>memoId {m.memoId.slice(0, 18)}… · block {m.blockNumber.toString()}</div>
                 </div>
-                <a href={`https://testnet.arcscan.app/tx/${m.txHash}`} target="_blank" rel="noopener noreferrer"
-                  className="mt-1.5 inline-block font-mono text-[10px] text-red-primary hover:underline">
-                  {m.txHash.slice(0, 12)}…{m.txHash.slice(-6)} ↗
-                </a>
+                <div className="mt-1.5 flex items-center gap-3">
+                  <Link href={`/memo/${m.txHash}`}
+                    className="font-mono text-[10px] text-[#C8A87A] hover:underline">
+                    Open receipt →
+                  </Link>
+                  <a href={`https://testnet.arcscan.app/tx/${m.txHash}`} target="_blank" rel="noopener noreferrer"
+                    className="font-mono text-[10px] text-red-primary hover:underline">
+                    {m.txHash.slice(0, 12)}…{m.txHash.slice(-6)} ↗
+                  </a>
+                </div>
               </div>
             ))}
           </div>
