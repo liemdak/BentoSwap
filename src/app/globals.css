@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* =========================================================
-   Bento — Global CSS
+   Bento · Global CSS
    Background: warm diagonal gradient image (cream → terracotta)
    Cards: dark (ink-*) floating on light background
    Page-level text: dark (#16120E)
@@ -47,12 +47,14 @@ body {
 
   color: var(--page-text);
   font-family: var(--font-inter), Inter, system-ui, sans-serif;
+  /* Base weight bumped ~20% (400 to 480) for a stronger, more legible feel */
+  font-weight: 480;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
 }
 
-/* iOS: background-attachment fixed causes glitches — use scroll on mobile */
+/* iOS: background-attachment fixed causes glitches · use scroll on mobile */
 @media (max-width: 768px) {
   body {
     background-attachment: scroll;
@@ -142,7 +144,15 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 @layer utilities {
   .text-balance { text-wrap: balance; }
 
-  /* Outlined text — transparent fill, visible stroke */
+  /* Subtle hover brighten for interactive cards / rows */
+  .hover-glow {
+    transition: filter 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .hover-glow:hover {
+    filter: brightness(1.16);
+  }
+
+  /* Outlined text · transparent fill, visible stroke */
   .text-outline {
     -webkit-text-stroke: 1.5px #16120E;
     color: transparent;

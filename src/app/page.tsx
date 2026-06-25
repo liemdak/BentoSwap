@@ -3,32 +3,39 @@ import Link from "next/link";
 const FEATURES = [
   {
     tag: "TRADE",
-    title: "Swap Stablecoins",
-    description: "Swap USDC, EURC, and USYC on Arc with real-time rates, custom slippage, and multi-send to multiple wallets in one flow.",
+    title: "Swap & Multi-send",
+    description: "Swap USDC, EURC, USYC, and cirBTC on Arc with live rates and custom slippage. Send to many wallets in one flow, each with its own memo.",
     href: "/trade",
     stats: "~0.48s finality",
   },
   {
     tag: "BRIDGE",
     title: "Cross-Chain Bridge",
-    description: "Bridge USDC across 8 chains using CCTP v2. Track every step — burn → attestation → mint — in real time.",
+    description: "Move USDC across 8 chains with CCTP v2. Watch every step (burn, attestation, mint) update in real time.",
     href: "/bridge",
     stats: "~20s bridge time",
   },
   {
     tag: "BALANCE",
     title: "Unified Balance",
-    description: "Aggregate USDC from multiple chains into one balance. Deposit, spend, and withdraw — powered by Circle Gateway.",
+    description: "Pool USDC from many chains into one spendable balance. Deposit, spend, and withdraw, powered by Circle Gateway.",
     href: "/balance",
     stats: "8 chains unified",
   },
   {
+    tag: "MEMOS",
+    title: "Transaction Memos",
+    description: "Attach an invoice id or note to any transfer, on-chain. Bento decodes each memo into readable text that explorers only show as raw hex.",
+    href: "/memo",
+    stats: "On-chain · readable",
+    isNew: true,
+  },
+  {
     tag: "AGENT",
     title: "Automate USDC Flows",
-    description: "Schedule recurring payouts, auto-split balances by %, or top-up your wallet when it runs low. Set once, runs hands-free. One signature, zero gas.",
+    description: "Auto top-up a low wallet, split balances by percentage, or run recurring payouts. One signature, no gas, powered by Circle Agent Stack.",
     href: "/agent",
     stats: "Gasless · EIP-712",
-    isNew: true,
   },
 ];
 
@@ -45,6 +52,7 @@ const FOOTER_LINKS = {
     { label: "Trade",   href: "/trade",   external: false },
     { label: "Bridge",  href: "/bridge",  external: false },
     { label: "Balance", href: "/balance", external: false },
+    { label: "Memos",   href: "/memo",    external: false },
     { label: "Agent",   href: "/agent",   external: false },
   ],
   explore: [
@@ -77,7 +85,7 @@ export default function HomePage() {
           </h1>
 
           <p className="mt-5 max-w-xl font-body text-base text-page-muted sm:text-lg">
-            Swap, bridge, and automate your stablecoins on Arc Testnet.
+            Swap, bridge, send with memos, and automate your stablecoins on Arc Testnet.
             Powered by{" "}
             <span className="font-medium text-page-DEFAULT">Circle App Kit</span> and{" "}
             <span className="font-medium text-page-DEFAULT">CCTP v2</span>.
@@ -105,12 +113,12 @@ export default function HomePage() {
             <span className="font-mono text-xs tracking-widest text-page-muted">{"// FEATURES"}</span>
             <div className="h-px flex-1 bg-[rgba(22,18,14,0.15)]" />
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
             {FEATURES.map(({ tag, title, description, href, stats, isNew }) => (
               <Link
                 key={tag}
                 href={href}
-                className="group flex flex-col rounded-card2 border border-ink-border bg-ink-surface p-5 shadow-card transition-all hover:border-ink-border2 hover:shadow-card-hover sm:p-6"
+                className="hover-glow group flex flex-col rounded-card2 border border-ink-border bg-ink-surface p-5 shadow-card transition-all hover:border-ink-border2 hover:shadow-card-hover sm:p-6"
               >
                 <div className="mb-4 flex items-center justify-between">
                   <span className="font-mono text-xs tracking-widest text-red-primary">
@@ -268,7 +276,7 @@ export default function HomePage() {
         <div className="border-t border-[#C8A87A]/30">
           <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-4 sm:flex-row sm:px-6">
             <span className="font-mono text-[11px] text-page-muted">
-              © 2026 Bento · Built on Arc Testnet · Figures are indicative — not financial advice
+              © 2026 Bento · Built on Arc Testnet · Figures are indicative, not financial advice
             </span>
             <div className="flex items-center gap-4">
               <a href="https://docs.arc.io" target="_blank" rel="noopener noreferrer"
@@ -289,7 +297,7 @@ export default function HomePage() {
 
 function PoweredByCard({ label, desc, tag }: { label: string; desc: string; tag: string }) {
   return (
-    <div className="rounded-card2 border border-ink-border bg-ink-surface p-5 shadow-card sm:p-6">
+    <div className="hover-glow rounded-card2 border border-ink-border bg-ink-surface p-5 shadow-card sm:p-6">
       <span className="font-mono text-xs tracking-widest text-red-primary">{"// " + tag}</span>
       <h4 className="mt-2 font-display text-lg text-cream-white">{label}</h4>
       <p className="mt-2 font-body text-sm leading-relaxed text-muted">{desc}</p>

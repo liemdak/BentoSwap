@@ -54,7 +54,7 @@ export default function SwapCard() {
   const toAmount  = fromAmount ? (parseFloat(fromAmount) * rate).toFixed(outDecimals) : "";
   const minReceived = toAmount
     ? (parseFloat(toAmount) * (1 - parseFloat(activeSlippage || "0.5") / 100)).toFixed(outDecimals)
-    : "—";
+    : "·";
 
   const onArc = chainId === ARC_CHAIN_ID;
 
@@ -198,7 +198,7 @@ export default function SwapCard() {
                     {fromBalanceLoading ? "Loading…" : `Balance: ${parseFloat(fromBalance).toLocaleString(undefined, { maximumFractionDigits: fromToken === "cirBTC" ? 8 : 4 })} ${fromToken}`}
                   </button>
                 ) : (
-                  <span className="font-mono text-[11px] text-muted">Balance: —</span>
+                  <span className="font-mono text-[11px] text-muted">Balance: ·</span>
                 )}
               </div>
               <div className="flex items-center gap-3">

@@ -9,7 +9,7 @@ function getClient() {
   });
 }
 
-// POST /api/agent/wallet — create a new agent wallet, return signed token
+// POST /api/agent/wallet · create a new agent wallet, return signed token
 export async function POST() {
   try {
     const client = getClient();
@@ -28,7 +28,7 @@ export async function POST() {
     const wallet = walletRes.data?.wallets?.[0];
     if (!wallet) throw new Error("Failed to create wallet");
 
-    // Issue a token tied to this walletId — stored client-side, required for execute
+    // Issue a token tied to this walletId · stored client-side, required for execute
     const token = signWalletId(wallet.id);
 
     return NextResponse.json({

@@ -8,7 +8,7 @@ function getClient() {
   });
 }
 
-// GET /api/agent/status?txId=xxx — poll transaction status
+// GET /api/agent/status?txId=xxx · poll transaction status
 export async function GET(req: NextRequest) {
   const txId = req.nextUrl.searchParams.get("txId");
   if (!txId) return NextResponse.json({ error: "Missing txId" }, { status: 400 });

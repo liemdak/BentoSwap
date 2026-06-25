@@ -24,7 +24,7 @@ export default function MemoLab() {
   const onArc = chainId === ARC_CHAIN_ID;
 
   const [lookupTx, setLookupTx] = useState("");
-  // Accept a bare tx hash OR a full ArcScan URL pasted in — extract the hash.
+  // Accept a bare tx hash OR a full ArcScan URL pasted in · extract the hash.
   const lookupHash = lookupTx.match(/0x[0-9a-fA-F]{64}/)?.[0] ?? null;
   const lookupValid = !!lookupHash;
   const goToReceipt = () => { if (lookupHash) router.push(`/memo/${lookupHash}`); };
@@ -143,12 +143,12 @@ export default function MemoLab() {
             />
             <input
               type="text" value={memo} onChange={(e) => setMemo(e.target.value)}
-              placeholder="Memo text — e.g. order=2026-0001" disabled={sendState === "sending"} maxLength={200}
+              placeholder="Memo text · e.g. order=2026-0001" disabled={sendState === "sending"} maxLength={200}
               className="w-full rounded border border-[#C8A87A]/30 bg-black px-3 py-2.5 font-mono text-sm text-cream-white placeholder:text-muted focus:border-[#C8A87A]/60 focus:outline-none disabled:opacity-50"
             />
             <input
               type="text" value={memoId} onChange={(e) => setMemoId(e.target.value)}
-              placeholder="memoId source (optional) — e.g. invoice-2026-0001" disabled={sendState === "sending"} maxLength={120}
+              placeholder="memoId source (optional) · e.g. invoice-2026-0001" disabled={sendState === "sending"} maxLength={120}
               className="w-full rounded border border-ink-border2 bg-black px-3 py-2 font-mono text-[11px] text-cream-dim placeholder:text-muted focus:border-[#C8A87A]/50 focus:outline-none disabled:opacity-50"
             />
 
@@ -188,7 +188,7 @@ export default function MemoLab() {
       <div className="rounded-card2 border border-ink-border bg-ink-surface p-5 shadow-card">
         <div className="mb-1 font-mono text-xs tracking-widest text-red-primary">{"// LOOK UP A TRANSACTION"}</div>
         <p className="mb-3 font-body text-xs text-muted">
-          Paste a tx hash or an ArcScan link to open its shareable memo receipt — readable text, not hex.
+          Paste a tx hash or an ArcScan link to open its shareable memo receipt · readable text, not hex.
         </p>
         <div className="flex gap-2">
           <input
@@ -218,7 +218,7 @@ export default function MemoLab() {
           <span className="font-mono text-[10px] text-muted">{MEMO_CONTRACT.slice(0, 10)}…{MEMO_CONTRACT.slice(-6)}</span>
         </div>
         <p className="mb-3 font-body text-xs text-muted">
-          Decode <span className="font-mono text-cream-dim">Memo</span> events straight from Arc logs — this is how an indexer reconciles transfers.
+          Decode <span className="font-mono text-cream-dim">Memo</span> events straight from Arc logs · this is how an indexer reconciles transfers.
         </p>
 
         <div className="flex gap-2">

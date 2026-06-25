@@ -19,7 +19,7 @@ export function useChainUsdcBalance(config: ChainBalanceConfig) {
 
   const { rpc, usdcAddress, walletAddress } = config;
 
-  // Reset immediately when chain changes — never show wrong-chain balance
+  // Reset immediately when chain changes · never show wrong-chain balance
   useEffect(() => {
     setBalance(null);
     setLoading(false);

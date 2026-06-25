@@ -27,7 +27,7 @@ import { arcTestnet } from "./chains";
 export const MEMO_CONTRACT = "0x5294E9927c3306DcBaDb03fe70b92e01cCede505" as const;
 
 // Tokens whose `transfer` we can wrap with a memo on Arc Testnet.
-// (USYC omitted — its Arc Testnet address is not yet confirmed.)
+// (USYC omitted · its Arc Testnet address is not yet confirmed.)
 export const MEMO_TOKENS: Record<string, { address: Address; decimals: number }> = {
   USDC:   { address: "0x3600000000000000000000000000000000000000", decimals: 6 },
   EURC:   { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", decimals: 6 },
@@ -102,7 +102,7 @@ export interface SendWithMemoResult {
 /**
  * Send an ERC-20 transfer wrapped in a transaction memo via the Memo contract.
  * Uses the wallet's EIP-1193 provider directly (eth_sendTransaction) so the
- * connected EOA stays the original sender. No token approval needed — the Memo
+ * connected EOA stays the original sender. No token approval needed · the Memo
  * contract preserves msg.sender, so USDC.transfer behaves as a direct call.
  */
 export async function sendWithMemo(p: SendWithMemoParams): Promise<SendWithMemoResult> {
@@ -147,7 +147,7 @@ export async function sendWithMemo(p: SendWithMemoParams): Promise<SendWithMemoR
       memoIndex = (memoEvent.args as { memoIndex: bigint }).memoIndex.toString();
     }
   } catch {
-    // Non-fatal — the transfer already succeeded.
+    // Non-fatal · the transfer already succeeded.
   }
 
   return {

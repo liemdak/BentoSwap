@@ -17,7 +17,7 @@ const arcClient = createPublicClient({
   transport: http("https://rpc.testnet.arc.network"),
 });
 
-// Generic hook — fetch balance for any ERC-20 token on Arc Testnet
+// Generic hook · fetch balance for any ERC-20 token on Arc Testnet
 export function useArcTokenBalance(
   address: string | null,
   token: string,
@@ -38,7 +38,7 @@ export function useArcTokenBalance(
       });
       setBalance(formatUnits(raw as bigint, tokenInfo.decimals));
     } catch {
-      // RPC error — keep last known value
+      // RPC error · keep last known value
     } finally {
       setLoading(false);
     }

@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       message,
       signature: signature as `0x${string}`,
     });
-    if (!valid) return NextResponse.json({ error: "Invalid signature — wallet mismatch" }, { status: 401 });
+    if (!valid) return NextResponse.json({ error: "Invalid signature · wallet mismatch" }, { status: 401 });
   } catch {
     return NextResponse.json({ error: "Signature verification failed" }, { status: 401 });
   }
@@ -75,11 +75,11 @@ export async function POST(req: NextRequest) {
     // ── Demo mode (no Circle keys) ───────────────────────────
     const client = await getCircleClient();
     if (!client) {
-      console.log("[reclaim] DEMO mode — would send", balance, "USDC →", recipientAddress);
+      console.log("[reclaim] DEMO mode · would send", balance, "USDC →", recipientAddress);
       return NextResponse.json({
         status:  "demo",
         balance,
-        note:    "Circle API not configured — demo only",
+        note:    "Circle API not configured · demo only",
       });
     }
 

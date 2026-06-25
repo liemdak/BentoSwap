@@ -114,7 +114,7 @@ export default function BridgeCard() {
     if (!adapter || !canBridge) return;
     setBridgeState("running");
     setErrMsg("");
-    // Show Approve as active first — it's always the first real step
+    // Show Approve as active first · it's always the first real step
     setSteps(INITIAL_STEPS.map((s, i) => ({ ...s, state: i === 0 ? "active" : "pending" as const })));
 
     try {
@@ -124,7 +124,7 @@ export default function BridgeCard() {
         amount,
       });
 
-      // Use REAL SDK steps — filter noop, map to UI shape
+      // Use REAL SDK steps · filter noop, map to UI shape
       const sdkSteps = (result as { steps?: { name: string; state: string; txHash?: string; explorerUrl?: string }[] }).steps ?? [];
       const visible = sdkSteps.filter(s => s.state !== "noop");
 
@@ -175,7 +175,7 @@ export default function BridgeCard() {
                 ) : fromBalance !== null ? (
                   <span>Balance: <span className="text-cream-dim">{fromBalance} USDC</span></span>
                 ) : (
-                  <span className="text-muted/50">Balance: —</span>
+                  <span className="text-muted/50">Balance: ·</span>
                 )}
               </span>
             )}
@@ -230,7 +230,7 @@ export default function BridgeCard() {
                 ) : toBalance !== null ? (
                   <span>Balance: <span className="text-cream-dim">{toBalance} USDC</span></span>
                 ) : (
-                  <span className="text-muted/50">Balance: —</span>
+                  <span className="text-muted/50">Balance: ·</span>
                 )}
               </span>
             )}

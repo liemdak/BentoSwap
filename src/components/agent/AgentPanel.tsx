@@ -18,7 +18,7 @@ type AgentMode  = "topup" | "autosplit" | "payout" | "distribute";
 type TaskStatus = "active" | "paused";
 type Freq       = "daily" | "weekly" | "monthly";
 
-// Legacy UI type — mapped from StoredTask for display
+// Legacy UI type · mapped from StoredTask for display
 interface AgentTask {
   id:            string;
   walletAddress: string;
@@ -39,7 +39,7 @@ interface PayoutRule {
   address:   string;
   amount:    string;
   name:      string;
-  firstDate: string; // YYYY-MM-DD — first payment, used to derive recurring day/weekday
+  firstDate: string; // YYYY-MM-DD · first payment, used to derive recurring day/weekday
   time:      string; // HH:MM
 }
 
@@ -69,7 +69,7 @@ const FEATURE_CARDS = [
     mode:        "autosplit"  as AgentMode,
     tag:         "AUTO SPLIT",
     title:       "Auto Split",
-    description: "Split USDC across multiple wallets by percentage — daily, weekly, or monthly.",
+    description: "Split USDC across multiple wallets by percentage · daily, weekly, or monthly.",
     badges:      ["Multi-wallet", "Recurring"],
     isNew:       true,
   },
@@ -110,7 +110,7 @@ export default function AgentPanel() {
   const [deploying,    setDeploying]    = useState(false);
   const [deployedInfo, setDeployedInfo] = useState<{ address: string; label: string } | null>(null);
 
-  // Reclaim modal — shown when Cancel is clicked on a task that has balance
+  // Reclaim modal · shown when Cancel is clicked on a task that has balance
   const [reclaimTask,  setReclaimTask]  = useState<AgentTask | null>(null);
 
   // Fund agent wallet from inside success screen
@@ -319,13 +319,13 @@ export default function AgentPanel() {
     persistTasks(updated);
   };
 
-  // Direct remove — used after Reclaim or when balance is zero
+  // Direct remove · used after Reclaim or when balance is zero
   const removeTask = (id: string) => {
     const updated = loadTasks().filter(t => t.id !== id);
     persistTasks(updated);
   };
 
-  // Cancel button handler — shows Reclaim modal first
+  // Cancel button handler · shows Reclaim modal first
   const handleCancel = (task: AgentTask) => {
     setReclaimTask(task);
   };
@@ -568,7 +568,7 @@ export default function AgentPanel() {
                       {/* Notes */}
                       <div className="space-y-1 border-t border-ink-border pt-2">
                         <p className="font-mono text-[10px] text-muted">
-                          · Circle Developer Controlled Wallet — 1 unique wallet per task
+                          · Circle Developer Controlled Wallet · 1 unique wallet per task
                         </p>
                         <p className="font-mono text-[10px] text-muted">
                           · Gasless via Circle Paymaster · cancel anytime
@@ -585,7 +585,7 @@ export default function AgentPanel() {
                         : "bg-ink-surface2 border border-ink-border2 hover:border-cream-dim/30 text-cream-dim"
                     }`}
                   >
-                    {fundState === "done" ? "✓ Done — Agent is active" : "Skip, fund later"}
+                    {fundState === "done" ? "✓ Done · Agent is active" : "Skip, fund later"}
                   </button>
                 </div>
               ) : (
@@ -624,7 +624,7 @@ export default function AgentPanel() {
                       <FreqPicker value={splitFreq} onChange={setSplitFreq} />
                     </ConfigRow>
                   </div>
-                  <ConfigRow label={`Split rules — ${totalPct.toFixed(0)}% ${pctOk ? "✓" : "(must equal 100%)"}`}>
+                  <ConfigRow label={`Split rules · ${totalPct.toFixed(0)}% ${pctOk ? "✓" : "(must equal 100%)"}`}>
                     <SplitRuleList
                       rules={splitRules} totalAmount={parseFloat(splitTotal)}
                       onUpdate={updateSplit} onRemove={removeSplit} onAdd={addSplit}
@@ -651,7 +651,7 @@ export default function AgentPanel() {
                     <FreqPicker value={payoutFreq} onChange={setPayoutFreq} row />
                   </ConfigRow>
 
-                  <ConfigRow label="Recipients — each with their own first payment date">
+                  <ConfigRow label="Recipients · each with their own first payment date">
                     <div className="space-y-3">
                       {payoutRules.map((r, i) => (
                         <div key={i} className="rounded-card border border-ink-border2 bg-ink-surface2 p-3 space-y-2.5">
@@ -738,7 +738,7 @@ export default function AgentPanel() {
                   <ConfigRow label="Trigger when balance exceeds">
                     <AmountInput value={distCap} onChange={setDistCap} />
                   </ConfigRow>
-                  <ConfigRow label={`Distribute surplus by — ${distTotalPct.toFixed(0)}% ${distPctOk ? "✓" : "(must equal 100%)"}`}>
+                  <ConfigRow label={`Distribute surplus by · ${distTotalPct.toFixed(0)}% ${distPctOk ? "✓" : "(must equal 100%)"}`}>
                     <SplitRuleList
                       rules={distRules} totalAmount={0}
                       onUpdate={updateDist} onRemove={removeDist} onAdd={addDist}
@@ -768,7 +768,7 @@ export default function AgentPanel() {
               </>)}
             </div>
 
-            {/* Footer — hidden on success screen */}
+            {/* Footer · hidden on success screen */}
             {!deployedInfo && (
               <div className="border-t border-ink-border px-5 py-4">
                 <button
@@ -792,7 +792,7 @@ export default function AgentPanel() {
         <span className="mt-0.5 flex-shrink-0 text-sm">⚠️</span>
         <p className="font-mono text-[11px] text-white/60 leading-relaxed">
           <span className="text-white/80 font-semibold">Testnet demo.</span>{" "}
-          The agent executes while this browser tab is open. Your task settings are saved to Firebase — reopen the app anytime to resume. A server-side scheduler will be added in the mainnet version.
+          The agent executes while this browser tab is open. Your task settings are saved to Firebase · reopen the app anytime to resume. A server-side scheduler will be added in the mainnet version.
         </p>
       </div>
     </div>
@@ -1050,7 +1050,7 @@ function DateTimePicker({ date, time, freq, onDateChange, onTimeChange }: {
 
   return (
     <div className="space-y-2">
-      {/* Date row — masked dd-mm-yyyy */}
+      {/* Date row · masked dd-mm-yyyy */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="font-mono text-[10px] text-muted w-24 flex-shrink-0">First payment</span>
         <MaskedDateInput value={date} onChange={onDateChange} />
@@ -1065,7 +1065,7 @@ function DateTimePicker({ date, time, freq, onDateChange, onTimeChange }: {
         </div>
       </div>
 
-      {/* Time row — masked HH:MM */}
+      {/* Time row · masked HH:MM */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="font-mono text-[10px] text-muted w-24 flex-shrink-0">Time</span>
         <MaskedTimeInput value={time} onChange={onTimeChange} />
@@ -1129,7 +1129,7 @@ function SplitRuleList({ rules, totalAmount, onUpdate, onRemove, onAdd, minRules
             <span className="w-20 flex-shrink-0 text-right font-mono text-xs text-muted">
               {totalAmount > 0 && parseFloat(r.pct) > 0
                 ? `${((totalAmount * parseFloat(r.pct)) / 100).toFixed(2)}`
-                : "—"}
+                : "·"}
             </span>
           )}
           {rules.length > minRules && (
@@ -1341,7 +1341,7 @@ function MaskedDateInput({ value, onChange }: { value: string; onChange: (v: str
     if (digits.length === 8) {
       onChange(toISO(masked));
     } else {
-      onChange(""); // incomplete — clear parent so validation doesn't trigger
+      onChange(""); // incomplete · clear parent so validation doesn't trigger
     }
     return masked;
   };

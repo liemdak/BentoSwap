@@ -38,13 +38,13 @@ export interface TaskConfig {
 export interface StoredTask {
   id:            string;   // Circle walletId
   walletAddress: string;   // Circle agent wallet address (funded by user)
-  token:         string;   // HMAC token — required by server to authorize execution
+  token:         string;   // HMAC token · required by server to authorize execution
   mode:          AgentMode;
   label:         string;
   sublabel:      string;
   status:        TaskStatus;
   createdAt:     string;
-  nextRunAt:     string;   // ISO — when to fire next
+  nextRunAt:     string;   // ISO · when to fire next
   lastRunAt?:    string;
   lastResult?:   RunResult;
   lastError?:    string;
@@ -89,7 +89,7 @@ export function nextOccurrence(after: Date, freq: string, firstDate: string): Da
   } else if (freq === "weekly") {
     d.setDate(d.getDate() + 7);
   } else {
-    // monthly — same calendar day as firstDate
+    // monthly · same calendar day as firstDate
     const day = new Date(firstDate + "T12:00:00").getDate();
     d.setMonth(d.getMonth() + 1);
     d.setDate(day);

@@ -91,7 +91,7 @@ export default function MemoReceiptView({ txHash }: { txHash: string }) {
               </span>
             </div>
 
-            {/* Memo — the hero */}
+            {/* Memo · the hero */}
             <div className="mb-1 font-mono text-[10px] tracking-widest text-muted">{"// MEMO"}</div>
             <p className="mb-5 break-words font-mono text-2xl leading-snug text-cream-white">
               {m.memo || <span className="text-muted">(empty)</span>}
@@ -121,7 +121,7 @@ export default function MemoReceiptView({ txHash }: { txHash: string }) {
             </div>
 
             <p className="mt-3 font-mono text-[10px] leading-relaxed text-muted">
-              Memo is public on-chain data — Bento decodes the raw event bytes into readable text. ArcScan shows it only as hex.
+              Memo is public on-chain data · Bento decodes the raw event bytes into readable text. ArcScan shows it only as hex.
             </p>
           </div>
         </div>

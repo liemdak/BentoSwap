@@ -102,7 +102,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         params: [{ chainId: ARC_CHAIN_PARAMS.chainId }],
       });
     } catch (err: unknown) {
-      // 4902 = chain not added yet — add it
+      // 4902 = chain not added yet · add it
       if ((err as { code?: number }).code === 4902) {
         await provider.request({
           method: "wallet_addEthereumChain",
@@ -129,7 +129,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           params: [{ eth_accounts: {} }],
         });
       } catch {
-        // User cancelled or wallet doesn't support — fall through to eth_requestAccounts
+        // User cancelled or wallet doesn't support · fall through to eth_requestAccounts
       }
 
       const accounts = (await prov.request({ method: "eth_requestAccounts" })) as string[];
@@ -160,7 +160,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             await prov.request({ method: "wallet_addEthereumChain", params: [ARC_CHAIN_PARAMS] });
             setChainId(ARC_CHAIN_ID);
           }
-          // else: non-blocking — user can switch manually
+          // else: non-blocking · user can switch manually
         }
       }
     } finally {

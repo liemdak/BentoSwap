@@ -23,7 +23,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bento — Stablecoin Finance on Arc",
+  title: "Bento · Stablecoin Finance on Arc",
   description:
     "Swap, bridge, and automate your stablecoins on Arc Testnet. Powered by Circle App Kit and CCTP v2.",
   icons: { icon: "/favicon.ico" },

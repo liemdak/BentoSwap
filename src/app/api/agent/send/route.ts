@@ -16,7 +16,7 @@ export interface SendRecipient {
   amount:  string; // e.g. "10.5"
 }
 
-// POST /api/agent/send — send USDC to multiple recipients from agent wallet
+// POST /api/agent/send · send USDC to multiple recipients from agent wallet
 export async function POST(req: NextRequest) {
   try {
     const { walletId, walletAddress, recipients, token } = (await req.json()) as {

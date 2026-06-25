@@ -23,7 +23,7 @@ export async function loadTasksFromFirestore(walletAddress: string): Promise<Sto
 
 /**
  * Save tasks for a wallet address to Firestore.
- * Fails silently — localStorage is always kept in sync as fallback.
+ * Fails silently · localStorage is always kept in sync as fallback.
  */
 export async function saveTasksToFirestore(
   walletAddress: string,

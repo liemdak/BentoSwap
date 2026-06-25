@@ -15,13 +15,13 @@ async function getCircleClient() {
 
 const USDC_ARC = "0x3600000000000000000000000000000000000000";
 
-// POST /api/agent/execute  — run one task now
+// POST /api/agent/execute  · run one task now
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as { task: StoredTask; token?: string };
   const { task, token } = body;
   if (!task) return NextResponse.json({ error: "Missing task" }, { status: 400 });
 
-  // Verify HMAC token — prevents unauthorized execution of arbitrary wallets
+  // Verify HMAC token · prevents unauthorized execution of arbitrary wallets
   const auth = requireToken(task.id, token);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: 401 });
 
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       if (!valid.length) return NextResponse.json({ error: "No valid payout rules" }, { status: 400 });
 
       if (!client) {
-        // No Circle keys — log and return OK (demo mode)
+        // No Circle keys · log and return OK (demo mode)
         console.log("[execute] DEMO payout:", valid.map(r => `${r.amount} USDC → ${r.address}`));
         return NextResponse.json({ mode: "demo", results: valid.map(r => ({ address: r.address, status: "demo" })) });
       }

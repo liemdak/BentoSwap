@@ -290,7 +290,7 @@ export default function MultiSendCard() {
                       </div>
                       {hasBadMemo(r) ? (
                         <p className="font-mono text-[9px] text-red-primary">
-                          {r.token} doesn&apos;t support memos on Arc — use USDC or EURC, or clear the memo
+                          {r.token} doesn&apos;t support memos on Arc · use USDC or EURC, or clear the memo
                         </p>
                       ) : (
                         <p className="font-mono text-[9px] text-muted">
@@ -364,11 +364,11 @@ export default function MultiSendCard() {
                         rel="noopener noreferrer"
                         className="font-mono text-[10px] text-muted hover:text-success transition-colors"
                       >
-                        Tx {idx + 1} — {r.txHash.slice(0, 10)}...{r.txHash.slice(-6)}
+                        Tx {idx + 1} · {r.txHash.slice(0, 10)}...{r.txHash.slice(-6)}
                       </a>
                     ) : (
                       <span className="font-mono text-[10px] text-red-primary">
-                        Tx {idx + 1} — failed
+                        Tx {idx + 1} · failed
                       </span>
                     )}
                     {r.txHash && (

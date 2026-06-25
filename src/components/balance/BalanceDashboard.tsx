@@ -100,7 +100,7 @@ type TxState = "idle" | "loading" | "done" | "error";
 interface TxResult { txHash?: string; explorerUrl?: string; }
 interface WithdrawPending { withdrawalBlock: number; txHash: string; explorerUrl?: string; }
 
-// ── ChainRow — reads real balance via RPC ──────────────────
+// ── ChainRow · reads real balance via RPC ──────────────────
 function ChainRow({
   chain, adapter, walletAddress, gatewayChains, depositChain, withdrawChain,
   onDeposit, onWithdraw,
@@ -227,14 +227,14 @@ function ChainRow({
           <div className="flex flex-1 items-center justify-end gap-6 font-mono text-sm">
             {/* Gateway balance */}
             <span className={`w-20 text-right transition-all duration-500 ${gwBal > 0 ? "text-success" : "text-muted"}`}>
-              {gwBal > 0 ? `$${gwBal.toFixed(2)}` : "—"}
+              {gwBal > 0 ? `$${gwBal.toFixed(2)}` : "·"}
             </span>
             {/* Wallet balance */}
             <span className="w-20 text-right text-cream-dim">
-              {!walletAddress ? <span className="text-muted">—</span>
+              {!walletAddress ? <span className="text-muted">·</span>
                 : loading && balance === null ? <span className="animate-pulse text-muted">…</span>
                 : walletBal !== null ? `$${walletBal.toFixed(2)}`
-                : <span className="text-muted">—</span>}
+                : <span className="text-muted">·</span>}
             </span>
           </div>
           <div className="flex gap-1.5">
@@ -250,7 +250,7 @@ function ChainRow({
             <div className="ml-auto flex items-center gap-3 font-mono text-sm">
               {gwBal > 0 && <span className="text-success">${gwBal.toFixed(2)}</span>}
               <span className="text-cream-dim">
-                {!walletAddress ? "—" : loading && balance === null ? "…" : walletBal !== null ? `$${walletBal.toFixed(2)}` : "—"}
+                {!walletAddress ? "·" : loading && balance === null ? "…" : walletBal !== null ? `$${walletBal.toFixed(2)}` : "·"}
               </span>
             </div>
           </div>
@@ -423,7 +423,7 @@ export default function BalanceDashboard() {
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4">
 
-      {/* ══ HERO — Total Unified Balance ═══════════════════════ */}
+      {/* ══ HERO · Total Unified Balance ═══════════════════════ */}
       <div className="overflow-hidden rounded-card2 border border-ink-border bg-ink-surface shadow-card">
         {/* Rainbow top bar */}
         <div className="h-1 w-full bg-gradient-to-r from-red-primary via-yellow-400 to-success" />
@@ -443,9 +443,9 @@ export default function BalanceDashboard() {
           {/* Big number */}
           <div className="font-mono text-4xl font-bold text-cream-white sm:text-5xl">
             {!isConnected ? (
-              <span className="text-muted">$—</span>
+              <span className="text-muted">$·</span>
             ) : isLoading ? (
-              <span className="animate-pulse text-muted">$—</span>
+              <span className="animate-pulse text-muted">$·</span>
             ) : (
               <AnimatedNumber value={grandTotal} />
             )}
@@ -475,7 +475,7 @@ export default function BalanceDashboard() {
                   <p className="font-mono text-[9px] text-muted">Wallets</p>
                   <p className="font-mono text-xs font-medium text-cream-white">
                     {walletLoading && walletTotal === 0
-                      ? <span className="animate-pulse text-muted">—</span>
+                      ? <span className="animate-pulse text-muted">·</span>
                       : `$${walletTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                     }
                   </p>
@@ -491,7 +491,7 @@ export default function BalanceDashboard() {
                   <p className="font-mono text-[9px] text-muted">Circle Gateway</p>
                   <p className="font-mono text-xs font-medium text-cream-white">
                     {gwLoading && gwTotal === 0
-                      ? <span className="animate-pulse text-muted">—</span>
+                      ? <span className="animate-pulse text-muted">·</span>
                       : `$${gwTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                     }
                   </p>
@@ -540,7 +540,7 @@ export default function BalanceDashboard() {
                       ? <span className={parseFloat(cirBtcBalance) > 0 ? "text-success" : "text-cream-dim"}>
                           {parseFloat(cirBtcBalance).toLocaleString(undefined, { maximumFractionDigits: 8 })} cirBTC
                         </span>
-                      : <span className="text-muted">—</span>
+                      : <span className="text-muted">·</span>
                   }
                 </p>
                 {cirBtcBalance !== null && parseFloat(cirBtcBalance) > 0 && (
@@ -558,12 +558,12 @@ export default function BalanceDashboard() {
           </div>
 
           <p className="mt-2 font-mono text-[10px] text-muted">
-            Non-USDC tokens are held in your wallet — not depositable to Circle Gateway
+            Non-USDC tokens are held in your wallet · not depositable to Circle Gateway
           </p>
         </div>
       )}
 
-      {/* ══ HOW IT WORKS — compact horizontal ══════════════════ */}
+      {/* ══ HOW IT WORKS · compact horizontal ══════════════════ */}
       <div className="rounded-card2 border border-ink-border bg-ink-surface px-4 py-3 sm:px-5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-[10px] tracking-widest text-muted mr-2">{"// HOW IT WORKS"}</span>
@@ -608,7 +608,7 @@ export default function BalanceDashboard() {
               </div>
             )}
             <div className="space-y-2">
-              {/* Column header — px-3 matches ChainRow's internal card padding */}
+              {/* Column header · px-3 matches ChainRow's internal card padding */}
               <div className="hidden items-center gap-3 px-3 pb-0.5 sm:flex">
                 <div className="w-[26px] flex-shrink-0" />
                 <span className="w-14" />
@@ -618,7 +618,7 @@ export default function BalanceDashboard() {
                   </span>
                   <span className="w-20 text-right">Wallet</span>
                 </div>
-                {/* Invisible ghost buttons — exact same size as real buttons for alignment */}
+                {/* Invisible ghost buttons · exact same size as real buttons for alignment */}
                 <div className="invisible flex gap-1.5" aria-hidden="true">
                   <span className="rounded border px-2.5 py-1 font-mono text-[11px]">Deposit</span>
                   <span className="rounded border px-2.5 py-1 font-mono text-[11px]">Withdraw</span>
@@ -649,7 +649,7 @@ export default function BalanceDashboard() {
   );
 }
 
-// ── Withdraw Step 2 Panel — polls block until ready ────────
+// ── Withdraw Step 2 Panel · polls block until ready ────────
 function WithdrawStep2Panel({
   pending, rpc, loading, err, onComplete, onDismiss,
 }: {
@@ -736,7 +736,7 @@ function WithdrawStep2Panel({
 
       {err && <p className="font-mono text-[10px] text-red-primary">{err}</p>}
 
-      {/* Dismiss — funds already arrived */}
+      {/* Dismiss · funds already arrived */}
       <button
         onClick={onDismiss}
         className="w-full text-center font-mono text-[10px] text-muted hover:text-cream-white transition-colors pt-1"
@@ -747,7 +747,7 @@ function WithdrawStep2Panel({
   );
 }
 
-// ── Circle logo — SVG inline, zero file dependency ────────
+// ── Circle logo · SVG inline, zero file dependency ────────
 function CircleLogo({ size = 24 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"

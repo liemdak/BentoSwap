@@ -1,4 +1,4 @@
-// Pure layout component — no hooks, no "use client" needed.
+// Pure layout component · no hooks, no "use client" needed.
 // Renders floating bubble particles that rise across the full viewport.
 // Placed in RootLayout so every page gets the effect.
 

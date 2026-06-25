@@ -23,7 +23,7 @@ export function signWalletId(walletId: string): string {
   return createHmac("sha256", hmacSecret()).update(walletId).digest("hex");
 }
 
-/** Verify that token matches walletId — timing-safe */
+/** Verify that token matches walletId · timing-safe */
 export function verifyToken(walletId: string, token: string): boolean {
   try {
     const expected = Buffer.from(signWalletId(walletId), "hex");
@@ -35,7 +35,7 @@ export function verifyToken(walletId: string, token: string): boolean {
   }
 }
 
-/** Express-style helper — returns 401 NextResponse or null */
+/** Express-style helper · returns 401 NextResponse or null */
 export function requireToken(
   walletId: string | undefined,
   token: string | undefined,

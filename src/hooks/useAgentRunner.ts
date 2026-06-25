@@ -37,7 +37,7 @@ export function useAgentRunner({ onUpdate, intervalMs = 20_000 }: RunnerOptions)
         const res  = await fetch("/api/agent/execute", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
-          // Send token alongside task — server verifies HMAC before executing
+          // Send token alongside task · server verifies HMAC before executing
           body:    JSON.stringify({ task, token: task.token }),
         });
         const body = await res.json();

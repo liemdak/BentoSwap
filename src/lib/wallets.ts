@@ -1,4 +1,4 @@
-// Wallet definitions — no WalletConnect, injected only
+// Wallet definitions · no WalletConnect, injected only
 
 export interface WalletDef {
   id: string;

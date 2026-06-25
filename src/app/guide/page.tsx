@@ -4,16 +4,20 @@ import { useState, useEffect } from "react";
 
 // ── Sidebar sections ──────────────────────────────────────
 const SECTIONS = [
-  { id: "wallets",   num: "01", label: "Wallet Architecture" },
-  { id: "topup",     num: "02", label: "Auto Top-Up" },
-  { id: "split",     num: "03", label: "Split & Payout" },
-  { id: "security",  num: "04", label: "Security" },
-  { id: "reclaim",   num: "05", label: "Reclaim Funds" },
-  { id: "faq",       num: "06", label: "FAQ" },
+  { id: "overview",  num: "01", label: "Overview" },
+  { id: "trade",     num: "02", label: "Trade & Multi-send" },
+  { id: "memos",     num: "03", label: "Transaction Memos" },
+  { id: "bridge",    num: "04", label: "Bridge & Balance" },
+  { id: "wallets",   num: "05", label: "Agent Wallets" },
+  { id: "topup",     num: "06", label: "Auto Top-Up" },
+  { id: "split",     num: "07", label: "Split & Payout" },
+  { id: "security",  num: "08", label: "Security" },
+  { id: "reclaim",   num: "09", label: "Reclaim Funds" },
+  { id: "faq",       num: "10", label: "FAQ" },
 ];
 
 export default function GuidePage() {
-  const [activeId, setActiveId] = useState("wallets");
+  const [activeId, setActiveId] = useState("overview");
 
   // Scroll spy
   useEffect(() => {
@@ -40,10 +44,12 @@ export default function GuidePage() {
 
         {/* ── Hero ─────────────────────────────────────── */}
         <div className="mb-12">
-          <div className="mb-3 font-mono text-[11px] tracking-widest text-red-primary">{"{ AGENT GUIDE }"}</div>
-          <h1 className="font-display text-5xl text-cream-white">Agent Guide</h1>
+          <div className="mb-3 font-mono text-[11px] tracking-widest text-red-primary">{"{ BENTO GUIDE }"}</div>
+          <h1 className="font-display text-5xl text-cream-white">Bento Guide</h1>
           <p className="mt-3 max-w-xl font-body text-base text-muted leading-relaxed">
-            Understand how Agent Wallets work before deploying. Covers fund recovery, security model, and step-by-step walkthroughs.
+            Everything Bento does on Arc Testnet: swap and multi-send with memos, bridge USDC across chains,
+            pool a unified balance, and automate flows with agent wallets. Gas is paid in USDC and settles in
+            about half a second.
           </p>
         </div>
 
@@ -74,12 +80,118 @@ export default function GuidePage() {
           {/* Content */}
           <main className="min-w-0 flex-1 space-y-16">
 
-            {/* ── 01 — Wallet Architecture ─────────────── */}
-            <section id="wallets" className="scroll-mt-24">
-              <SectionHeader num="01" title="Wallet Architecture" />
+            {/* ── 01 · Overview ────────────────────────── */}
+            <section id="overview" className="scroll-mt-24">
+              <SectionHeader num="01" title="Overview" />
               <div className="space-y-5">
                 <p className="font-body text-sm leading-relaxed text-muted">
-                  Each agent task uses a separate <strong className="text-cream-dim">Developer Controlled Wallet (DCW)</strong> managed by Circle — completely isolated from your MetaMask wallet.
+                  Bento is a stablecoin app built on <strong className="text-cream-dim">Arc Testnet</strong> (Chain ID 5042002).
+                  It runs entirely on Circle infrastructure, so there are no custom smart contracts to audit and no gas token
+                  to manage. Gas is paid in USDC and blocks finalize in roughly 0.48 seconds.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <InfoCard icon="🔄" title="Trade" body="Swap USDC, EURC, USYC, and cirBTC, then send to many wallets at once with an optional memo per recipient." />
+                  <InfoCard icon="🏷️" title="Memos" body="Attach an invoice id or note to a transfer. It lands on-chain in the same transaction and Bento reads it back as text." />
+                  <InfoCard icon="🌉" title="Bridge" body="Move USDC across 8 chains using CCTP v2, with the burn, attestation, and mint steps tracked live." />
+                  <InfoCard icon="🤖" title="Agent" body="Automate top-ups, percentage splits, and recurring payouts with one signature and no gas." />
+                </div>
+                <Callout type="info" text="Everything here is testnet. Get free USDC from the Circle faucet, then experiment with small amounts." />
+              </div>
+            </section>
+
+            {/* ── 02 · Trade & Multi-send ───────────────── */}
+            <section id="trade" className="scroll-mt-24">
+              <SectionHeader num="02" title="Trade & Multi-send" />
+              <div className="space-y-5">
+                <p className="font-body text-sm leading-relaxed text-muted">
+                  The Trade page has two modes. <strong className="text-cream-dim">Swap</strong> exchanges one stablecoin for
+                  another on Arc, and <strong className="text-cream-dim">Multi-send</strong> pays many addresses in a single flow.
+                </p>
+
+                <div className="rounded-card border border-ink-border bg-ink-surface p-5 space-y-3">
+                  <div className="font-mono text-[10px] tracking-widest text-muted">{"// SWAP"}</div>
+                  {[
+                    "Pick a pair across USDC, EURC, USYC, and cirBTC",
+                    "Review the live rate, your slippage, and the minimum received",
+                    "Confirm in your wallet. Circle App Kit routes the swap on Arc",
+                  ].map((t, i) => <Step key={i} n={i + 1} text={t} />)}
+                </div>
+
+                <div className="rounded-card border border-ink-border bg-ink-surface p-5 space-y-3">
+                  <div className="font-mono text-[10px] tracking-widest text-muted">{"// MULTI-SEND"}</div>
+                  {[
+                    "Add up to 20 recipients, each with an amount and token",
+                    "Optionally add a memo per recipient (invoice id, note)",
+                    "Bento sends them one by one and shows progress for each",
+                  ].map((t, i) => <Step key={i} n={i + 1} text={t} />)}
+                </div>
+
+                <Callout type="info" text="Multi-send uses a kit.send() loop rather than a batch contract. Arc's sub-second finality keeps it fast even for many recipients." />
+              </div>
+            </section>
+
+            {/* ── 03 · Transaction Memos ────────────────── */}
+            <section id="memos" className="scroll-mt-24">
+              <SectionHeader num="03" title="Transaction Memos" />
+              <div className="space-y-5">
+                <p className="font-body text-sm leading-relaxed text-muted">
+                  A memo attaches readable context to a transfer so you can reconcile it later. Arc&apos;s
+                  <strong className="text-cream-dim"> Memo contract</strong> wraps the transfer, keeps your wallet as the
+                  original sender, and records the note on-chain in the same transaction.
+                </p>
+
+                <div className="rounded-card border border-ink-border bg-ink-surface p-5 space-y-3">
+                  <div className="font-mono text-[10px] tracking-widest text-muted">{"// HOW IT WORKS"}</div>
+                  {[
+                    "You send USDC or EURC and type a memo (e.g. invoice-2026-0001)",
+                    "The Memo contract forwards the transfer and emits a Memo event",
+                    "Your wallet stays the sender via the CallFrom precompile",
+                    "Bento reads the event back and decodes it into plain text",
+                    "Open a receipt by tx hash, or paste a full ArcScan link",
+                  ].map((t, i) => <Step key={i} n={i + 1} text={t} />)}
+                </div>
+
+                <Callout type="warning" text="Memos are public and permanent on-chain. Anyone can read them. Never put private or sensitive data in a memo. Treat it like a public payment reference." />
+                <Callout type="tip" text="Explorers show the memo only as raw hex. Bento decodes it into readable text, so share a Bento receipt link when you want people to actually read the note." />
+              </div>
+            </section>
+
+            {/* ── 04 · Bridge & Balance ─────────────────── */}
+            <section id="bridge" className="scroll-mt-24">
+              <SectionHeader num="04" title="Bridge & Balance" />
+              <div className="space-y-5">
+                <p className="font-body text-sm leading-relaxed text-muted">
+                  Bridge moves real USDC between chains, while Unified Balance pools your USDC into a single number
+                  you can spend from anywhere.
+                </p>
+
+                <div className="rounded-card border border-ink-border bg-ink-surface p-5">
+                  <div className="font-mono text-[10px] tracking-widest text-muted mb-4">{"// BRIDGE (CCTP v2)"}</div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-0">
+                    <FlowBox label="Burn" sub="On source chain" color="red" />
+                    <FlowArrow label="attest" />
+                    <FlowBox label="Attestation" sub="Circle signs it" color="blue" />
+                    <FlowArrow label="mint" />
+                    <FlowBox label="Mint" sub="On Arc" color="green" />
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <InfoCard icon="🌉" title="8 chains supported" body="Ethereum, Base, Arbitrum, Optimism, Polygon, Avalanche, Unichain, and Pharos, paired with Arc Testnet." />
+                  <InfoCard icon="🏦" title="Unified Balance" body="Deposit USDC into Circle Gateway, aggregate it across chains, spend from any chain, and withdraw back anytime." />
+                </div>
+
+                <Callout type="info" text="A bridge usually finishes in about 20 seconds. Bento polls the attestation and shows each step so you are never left guessing." />
+              </div>
+            </section>
+
+            {/* ── 05 · Wallet Architecture ─────────────── */}
+            <section id="wallets" className="scroll-mt-24">
+              <SectionHeader num="05" title="Agent Wallets" />
+              <div className="space-y-5">
+                <p className="font-body text-sm leading-relaxed text-muted">
+                  Each agent task uses a separate <strong className="text-cream-dim">Developer Controlled Wallet (DCW)</strong> managed
+                  by Circle, kept completely isolated from your MetaMask wallet.
                 </p>
 
                 {/* Flow diagram */}
@@ -95,51 +207,47 @@ export default function GuidePage() {
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-3">
-                  <InfoCard icon="🔑" title="Your wallet stays safe" body="The agent has NO access to MetaMask. It only receives funds from you and never pulls back." />
-                  <InfoCard icon="🏦" title="1 task = 1 unique wallet" body="Deploy Auto Top-Up and Multi-send → 2 completely different 0x... addresses." />
-                  <InfoCard icon="🔄" title="Tasks survive device switch" body="Tasks are synced to Firebase by your MetaMask address — reconnect from any device." />
+                  <InfoCard icon="🔑" title="Your wallet stays safe" body="The agent has no access to MetaMask. It only receives funds from you and never pulls them back." />
+                  <InfoCard icon="🏦" title="1 task = 1 unique wallet" body="Deploy Auto Top-Up and Multi-send and you get two completely different 0x addresses." />
+                  <InfoCard icon="🔄" title="Tasks survive device switch" body="Tasks are synced to Firebase by your MetaMask address, so reconnect from any device." />
                 </div>
               </div>
             </section>
 
-            {/* ── 02 — Auto Top-Up ─────────────────────── */}
+            {/* ── 06 · Auto Top-Up ─────────────────────── */}
             <section id="topup" className="scroll-mt-24">
-              <SectionHeader num="02" title="Auto Top-Up" />
+              <SectionHeader num="06" title="Auto Top-Up" />
               <div className="space-y-5">
                 <p className="font-body text-sm leading-relaxed text-muted">
-                  Automatically refill your MetaMask wallet when balance drops below the threshold you set. Fund the agent wallet once and let it run.
+                  Automatically refill your MetaMask wallet when its balance drops below the threshold you set.
+                  Fund the agent wallet once and let it run.
                 </p>
 
                 <div className="rounded-card border border-ink-border bg-ink-surface p-5 space-y-3">
                   <div className="font-mono text-[10px] tracking-widest text-muted">{"// HOW IT WORKS"}</div>
                   {[
-                    { n: 1, text: "Set a threshold — e.g. trigger when MetaMask balance < $10" },
-                    { n: 2, text: "Deploy the agent → a new Agent Wallet (0xABC...) is created" },
-                    { n: 3, text: "Fund the Agent Wallet with your desired reserve amount" },
-                    { n: 4, text: "Bento server polls your MetaMask balance every ~20 seconds" },
-                    { n: 5, text: "When balance < $10 → Agent Wallet automatically sends $50 to MetaMask" },
-                    { n: 6, text: "Safety cap limits the total sent per 24h to prevent runaway spending" },
-                  ].map(s => (
-                    <div key={s.n} className="flex items-start gap-3">
-                      <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-primary font-mono text-[10px] font-bold text-white">{s.n}</span>
-                      <span className="font-mono text-xs text-cream-dim leading-relaxed">{s.text}</span>
-                    </div>
-                  ))}
+                    "Set a threshold (e.g. trigger when MetaMask balance is under $10)",
+                    "Deploy the agent and a new Agent Wallet (0xABC...) is created",
+                    "Fund the Agent Wallet with your desired reserve amount",
+                    "Bento polls your MetaMask balance every 20 seconds or so",
+                    "When the balance is under $10, the agent sends $50 to MetaMask",
+                    "A safety cap limits the total sent per 24h to stop runaway spending",
+                  ].map((t, i) => <Step key={i} n={i + 1} text={t} />)}
                 </div>
 
-                <Callout type="tip" text="Fund enough to cover multiple refills. Example: $50 refill amount × 5 cycles = fund $250 into the agent wallet." />
+                <Callout type="tip" text="Fund enough to cover multiple refills. Example: a $50 refill times 5 cycles means funding $250 into the agent wallet." />
               </div>
             </section>
 
-            {/* ── 03 — Split & Payout ──────────────────── */}
+            {/* ── 07 · Split & Payout ──────────────────── */}
             <section id="split" className="scroll-mt-24">
-              <SectionHeader num="03" title="Split & Payout" />
+              <SectionHeader num="07" title="Split & Payout" />
               <div className="space-y-5">
                 <div className="grid gap-4 sm:grid-cols-3">
                   <ModeCard
                     tag="AUTO SPLIT"
                     title="Split by percentage"
-                    steps={["Set total amount (e.g. $1,000)", "Assign %: Wallet A 60%, Wallet B 40%", "Choose schedule: Daily / Weekly / Monthly", "Agent splits automatically on schedule"]}
+                    steps={["Set total amount (e.g. $1,000)", "Assign %: Wallet A 60%, Wallet B 40%", "Choose schedule: Daily, Weekly, Monthly", "Agent splits automatically on schedule"]}
                   />
                   <ModeCard
                     tag="RECURRING PAYOUT"
@@ -149,32 +257,32 @@ export default function GuidePage() {
                   <ModeCard
                     tag="AUTO DISTRIBUTE"
                     title="Distribute surplus"
-                    steps={["Set an upper cap (e.g. > $5,000)", "When exceeded → distribute surplus", "Allocate by % to each wallet", "Fully automatic, no manual action"]}
+                    steps={["Set an upper cap (e.g. over $5,000)", "When exceeded, distribute the surplus", "Allocate by % to each wallet", "Fully automatic, no manual action"]}
                   />
                 </div>
-                <Callout type="info" text="All 3 modes are gasless — Circle Paymaster covers gas fees. You only need USDC inside the Agent Wallet." />
+                <Callout type="info" text="All 3 modes are gasless. Circle Paymaster covers gas fees, so you only need USDC inside the Agent Wallet." />
               </div>
             </section>
 
-            {/* ── 04 — Security ────────────────────────── */}
+            {/* ── 08 · Security ────────────────────────── */}
             <section id="security" className="scroll-mt-24">
-              <SectionHeader num="04" title="Security" />
+              <SectionHeader num="08" title="Security" />
               <div className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <SecurityCard
                     icon="✍️"
                     title="Wallet Signature"
-                    body="Reclaiming funds requires a personal_sign (EIP-191) from your MetaMask. The server verifies the signature cryptographically — only the holder of your private key can authorize a withdrawal."
+                    body="Reclaiming funds requires a personal_sign (EIP-191) from your MetaMask. The server verifies the signature cryptographically, so only the holder of your private key can authorize a withdrawal."
                   />
                   <SecurityCard
                     icon="🛡️"
                     title="Safety Cap"
-                    body="Limits total USDC the agent can send per 24h. If the agent misbehaves or is compromised, losses are bounded by this cap."
+                    body="Limits the total USDC the agent can send per 24h. If the agent misbehaves or is compromised, losses are bounded by this cap."
                   />
                   <SecurityCard
                     icon="📋"
                     title="Address whitelist"
-                    body="Agent can only send to addresses configured at deploy time. No funds can be sent to arbitrary addresses outside the list."
+                    body="The agent can only send to addresses configured at deploy time. No funds can go to arbitrary addresses outside the list."
                   />
                   <SecurityCard
                     icon="⏸️"
@@ -185,14 +293,14 @@ export default function GuidePage() {
 
                 <Callout
                   type="warning"
-                  text="Agent Wallets are Circle Developer Controlled Wallets — technically the developer has access. Use testnet only and keep amounts small."
+                  text="Agent Wallets are Circle Developer Controlled Wallets, so technically the developer has access. Use testnet only and keep amounts small."
                 />
               </div>
             </section>
 
-            {/* ── 05 — Reclaim Funds ───────────────────── */}
+            {/* ── 09 · Reclaim Funds ───────────────────── */}
             <section id="reclaim" className="scroll-mt-24">
-              <SectionHeader num="05" title="Reclaim Funds" />
+              <SectionHeader num="09" title="Reclaim Funds" />
               <div className="space-y-5">
                 <p className="font-body text-sm leading-relaxed text-muted">
                   When you cancel a task, any USDC remaining in the Agent Wallet is sent back to your MetaMask automatically.
@@ -203,25 +311,22 @@ export default function GuidePage() {
                   {[
                     "Click Cancel on any active task in the Agent panel",
                     "A popup shows the remaining USDC balance in the Agent Wallet",
-                    'Click "Reclaim & Cancel" — MetaMask will ask you to sign a message',
+                    'Click "Reclaim & Cancel" and MetaMask asks you to sign a message',
                     "The server verifies your signature and transfers all USDC back to your wallet",
-                    "No token, no secret file — just your MetaMask signature",
+                    "No token, no secret file, just your MetaMask signature",
                   ].map((s, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-success/20 font-mono text-[10px] font-bold text-success">{i + 1}</span>
-                      <span className="font-mono text-xs text-cream-dim leading-relaxed">{s}</span>
-                    </div>
+                    <Step key={i} n={i + 1} text={s} tone="success" />
                   ))}
                 </div>
 
-                <Callout type="info" text="Tasks are synced to Firebase by your MetaMask address. Clearing cache or switching devices will NOT lose your tasks — just reconnect the same wallet." />
-                <Callout type="warning" text="If you lose access to your MetaMask wallet (lost private key / seed phrase), funds in the Agent Wallet cannot be recovered. Always keep your seed phrase safe." />
+                <Callout type="info" text="Tasks are synced to Firebase by your MetaMask address. Clearing cache or switching devices will not lose your tasks, just reconnect the same wallet." />
+                <Callout type="warning" text="If you lose access to your MetaMask wallet (lost private key or seed phrase), funds in the Agent Wallet cannot be recovered. Always keep your seed phrase safe." />
               </div>
             </section>
 
-            {/* ── 06 — FAQ ─────────────────────────────── */}
+            {/* ── 10 · FAQ ─────────────────────────────── */}
             <section id="faq" className="scroll-mt-24">
-              <SectionHeader num="06" title="FAQ" />
+              <SectionHeader num="10" title="FAQ" />
               <div className="space-y-2">
                 {FAQ_ITEMS.map((item, i) => (
                   <FaqItem key={i} q={item.q} a={item.a} />
@@ -239,28 +344,28 @@ export default function GuidePage() {
 // ══ FAQ Data ═══════════════════════════════════════════════
 const FAQ_ITEMS = [
   {
-    q: "Is my MetaMask wallet at risk?",
-    a: "No. The Agent Wallet is completely separate. The agent only receives USDC from you and sends to pre-configured addresses — it never has access to your MetaMask private key.",
+    q: "Can people read my memos?",
+    a: "Yes. Memos are public, permanent on-chain data that anyone can read. Bento simply decodes the raw bytes into text. Never put private information in a memo. Treat it like a bank-transfer reference everyone can see.",
+  },
+  {
+    q: "Why does the memo not show on ArcScan?",
+    a: "The memo is stored as bytes in an event log, and explorers display bytes as raw hex, not text. That is a display limitation, not a security feature. Open the Bento receipt for that transaction to read the memo in plain text.",
+  },
+  {
+    q: "Is my MetaMask wallet at risk when using the Agent?",
+    a: "No. The Agent Wallet is completely separate. The agent only receives USDC from you and sends to pre-configured addresses, and it never has access to your MetaMask private key.",
   },
   {
     q: "If I clear my browser cache or switch devices, will I lose my tasks?",
     a: "No. Tasks are synced to Firebase by your MetaMask address. Just reconnect the same wallet on any device and all tasks reload automatically.",
   },
   {
-    q: "What if my tasks disappear?",
-    a: "They will reload from Firebase when you reconnect your MetaMask. If they still don't appear, contact support with your MetaMask address and we can look up the Agent Wallet history and initiate recovery.",
-  },
-  {
     q: "Can other users see my tasks?",
-    a: "No. Each user only sees tasks created from their own MetaMask address. Firestore stores data by wallet_address — no one else can read your data.",
+    a: "No. Each user only sees tasks created from their own MetaMask address. Firestore stores data by wallet address, so no one else can read your data.",
   },
   {
     q: "What is a DCW (Developer Controlled Wallet)?",
-    a: "A Circle-managed EVM wallet created under the developer's Circle account. Unlike MetaMask (user-controlled), a DCW doesn't need a private key from you. The developer programs it to execute transactions within a predefined policy.",
-  },
-  {
-    q: "After a task is completed or canceled, where do leftover funds go?",
-    a: "USDC stays in the Agent Wallet until you actively withdraw it. When you cancel, the Reclaim Funds popup appears automatically. If you skip it, go back to the Agent panel and cancel the task again to trigger the reclaim popup.",
+    a: "A Circle-managed EVM wallet created under the developer's Circle account. Unlike MetaMask (user-controlled), a DCW does not need a private key from you. The developer programs it to execute transactions within a predefined policy.",
   },
   {
     q: "Are there any fees?",
@@ -268,7 +373,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Does the agent run when my computer is off?",
-    a: "No — this is a testnet demo. The agent runner executes inside your browser tab. If you close the tab, execution pauses. Your task config and history are saved to Firebase, so everything resumes the next time you open the app. This limitation will be replaced by a server-side scheduler in the mainnet version.",
+    a: "No, this is a testnet demo. The agent runner executes inside your browser tab. If you close the tab, execution pauses. Your task config and history are saved to Firebase, so everything resumes the next time you open the app. This limitation will be replaced by a server-side scheduler in the mainnet version.",
   },
 ];
 
@@ -276,7 +381,7 @@ const FAQ_ITEMS = [
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={`rounded-card border transition-colors ${open ? "border-[#C8A87A]/30 bg-[#C8A87A]/5" : "border-ink-border bg-ink-surface"}`}>
+    <div className={`hover-glow rounded-card border transition-colors ${open ? "border-[#C8A87A]/30 bg-[#C8A87A]/5" : "border-ink-border bg-ink-surface"}`}>
       <button
         onClick={() => setOpen(o => !o)}
         className="flex w-full items-center justify-between px-5 py-4 text-left"
@@ -305,11 +410,23 @@ function SectionHeader({ num, title }: { num: string; title: string }) {
   );
 }
 
+function Step({ n, text, tone }: { n: number; text: string; tone?: "success" }) {
+  const badge = tone === "success"
+    ? "bg-success/20 text-success"
+    : "bg-red-primary text-white";
+  return (
+    <div className="flex items-start gap-3">
+      <span className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full font-mono text-[10px] font-bold ${badge}`}>{n}</span>
+      <span className="font-mono text-xs text-cream-dim leading-relaxed">{text}</span>
+    </div>
+  );
+}
+
 function FlowBox({ label, sub, color }: { label: string; sub: string; color: "blue"|"red"|"green" }) {
   const borderColor = { blue: "border-blue-500/40", red: "border-[#C8A87A]/50", green: "border-success/40" }[color];
   const textColor   = { blue: "text-blue-400",      red: "text-[#C8A87A]",      green: "text-success"     }[color];
   return (
-    <div className={`flex flex-1 flex-col items-center justify-center rounded-card border ${borderColor} bg-ink-surface2 px-4 py-3 text-center`}>
+    <div className={`hover-glow flex flex-1 flex-col items-center justify-center rounded-card border ${borderColor} bg-ink-surface2 px-4 py-3 text-center`}>
       <span className={`font-mono text-xs font-semibold ${textColor}`}>{label}</span>
       <span className="mt-0.5 font-mono text-[10px] text-muted">{sub}</span>
     </div>
@@ -329,7 +446,7 @@ function FlowArrow({ label }: { label: string }) {
 
 function InfoCard({ icon, title, body }: { icon: string; title: string; body: string }) {
   return (
-    <div className="rounded-card border border-ink-border bg-ink-surface p-4 space-y-1.5">
+    <div className="hover-glow rounded-card border border-ink-border bg-ink-surface p-4 space-y-1.5">
       <div className="text-xl">{icon}</div>
       <p className="font-mono text-xs font-semibold text-cream-dim">{title}</p>
       <p className="font-body text-xs leading-relaxed text-muted">{body}</p>
@@ -339,7 +456,7 @@ function InfoCard({ icon, title, body }: { icon: string; title: string; body: st
 
 function ModeCard({ tag, title, steps }: { tag: string; title: string; steps: string[] }) {
   return (
-    <div className="rounded-card border border-ink-border bg-ink-surface p-4 space-y-3">
+    <div className="hover-glow rounded-card border border-ink-border bg-ink-surface p-4 space-y-3">
       <div className="font-mono text-[10px] tracking-widest text-[#C8A87A]">{"{ " + tag + " }"}</div>
       <p className="font-mono text-sm font-semibold text-cream-white">{title}</p>
       <div className="space-y-1.5">
@@ -356,7 +473,7 @@ function ModeCard({ tag, title, steps }: { tag: string; title: string; steps: st
 
 function SecurityCard({ icon, title, body }: { icon: string; title: string; body: string }) {
   return (
-    <div className="rounded-card border border-ink-border bg-ink-surface p-4 space-y-2">
+    <div className="hover-glow rounded-card border border-ink-border bg-ink-surface p-4 space-y-2">
       <div className="flex items-center gap-2">
         <span className="text-lg">{icon}</span>
         <span className="font-mono text-xs font-semibold text-cream-dim">{title}</span>
