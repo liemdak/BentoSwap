@@ -24,6 +24,7 @@ interface WalletState {
   adapter: ViemAdapter | null;
   rawProvider: unknown;
   connect: (walletId: string) => Promise<void>;
+  connectProvider: (provider: unknown, name: string, id?: string) => Promise<void>;
   disconnect: () => void;
   switchToArc: () => Promise<void>;
   switchToChain: (chainId: number, chainName?: string, rpcUrl?: string) => Promise<void>;
@@ -113,13 +114,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, [rawProvider]);
 
-  // ── Connect ────────────────────────────────────────────
-  const connect = useCallback(async (id: string) => {
-    const walletDef = getWalletById(id);
-    if (!walletDef) throw new Error(`Unknown wallet: ${id}`);
-
-    const provider = walletDef.getProvider();
-    if (!provider) throw new Error(`${walletDef.name} not detected. Please install the extension.`);
+  // ── Connect with an explicit provider (EIP-6963 / discovered) ──
+  const connectProvider = useCallback(async (provider: unknown, name: string, id?: string) => {
+    if (!provider) throw new Error(`${name} not available`);
 
     setIsConnecting(true);
     try {
@@ -135,50 +132,52 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         // User cancelled or wallet doesn't support — fall through to eth_requestAccounts
       }
 
-      // Request accounts
       const accounts = (await prov.request({ method: "eth_requestAccounts" })) as string[];
       if (!accounts.length) throw new Error("No accounts returned");
 
-      // Get current chainId
       const chainHex = (await prov.request({ method: "eth_chainId" })) as string;
       const currentChain = parseInt(chainHex, 16);
 
-      // Build viem adapter
       const viemAdapter = await createViemAdapterFromProvider({ provider: prov as never });
 
       setRawProvider(provider);
       setAdapter(viemAdapter as ViemAdapter);
       setAddress(accounts[0]);
       setChainId(currentChain);
-      setWalletId(id);
-      setWalletName(walletDef.name);
+      setWalletId(id ?? name.toLowerCase());
+      setWalletName(name);
 
       // Auto-switch to Arc Testnet if on different chain
       if (currentChain !== ARC_CHAIN_ID) {
         try {
-          await (async () => {
-            const p = prov;
-            try {
-              await p.request({
-                method: "wallet_switchEthereumChain",
-                params: [{ chainId: ARC_CHAIN_PARAMS.chainId }],
-              });
-              setChainId(ARC_CHAIN_ID);
-            } catch (err: unknown) {
-              if ((err as { code?: number }).code === 4902) {
-                await p.request({ method: "wallet_addEthereumChain", params: [ARC_CHAIN_PARAMS] });
-                setChainId(ARC_CHAIN_ID);
-              }
-            }
-          })();
-        } catch {
-          // Non-blocking — user can switch manually
+          await prov.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: ARC_CHAIN_PARAMS.chainId }],
+          });
+          setChainId(ARC_CHAIN_ID);
+        } catch (err: unknown) {
+          if ((err as { code?: number }).code === 4902) {
+            await prov.request({ method: "wallet_addEthereumChain", params: [ARC_CHAIN_PARAMS] });
+            setChainId(ARC_CHAIN_ID);
+          }
+          // else: non-blocking — user can switch manually
         }
       }
     } finally {
       setIsConnecting(false);
     }
   }, []);
+
+  // ── Connect by known wallet id (legacy hardcoded list) ──
+  const connect = useCallback(async (id: string) => {
+    const walletDef = getWalletById(id);
+    if (!walletDef) throw new Error(`Unknown wallet: ${id}`);
+
+    const provider = walletDef.getProvider();
+    if (!provider) throw new Error(`${walletDef.name} not detected. Please install the extension.`);
+
+    await connectProvider(provider, walletDef.name, id);
+  }, [connectProvider]);
 
   // ── Disconnect ─────────────────────────────────────────
   const disconnect = useCallback(() => {
@@ -223,6 +222,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         adapter,
         rawProvider,
         connect,
+        connectProvider,
         disconnect,
         switchToArc,
         switchToChain,
