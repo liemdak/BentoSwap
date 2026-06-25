@@ -21,9 +21,7 @@ export default function MemoPage() {
         <div className="flex items-start gap-3 rounded-card border border-[rgba(200,168,122,0.35)] bg-[rgba(245,240,232,0.6)] px-4 py-3 backdrop-blur-sm">
           <span className="mt-1 h-[7px] w-[7px] flex-shrink-0 rounded-full bg-success shadow-[0_0_6px_#2D9B6F]" />
           <span className="font-mono text-[11px] leading-relaxed text-page-muted">
-            Arc&apos;s Memo contract routes transfers through the CallFrom precompile, so the
-            original wallet stays <span className="text-page-DEFAULT">msg.sender</span>. The
-            transfer and its memo land in one transaction. Live on Arc Testnet since 2026-06-18.
+            Add a note to any transfer so you can <span className="text-page-DEFAULT">look it up and reconcile</span> later.
           </span>
         </div>
       </div>

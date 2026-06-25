@@ -283,7 +283,12 @@ export async function readMemoByTx(txHash: string): Promise<MemoReceipt[]> {
   const memoEvents = parseEventLogs({ abi: MEMO_ABI, eventName: "Memo", logs: receipt.logs });
   const transferEvents = parseEventLogs({ abi: erc20Abi, eventName: "Transfer", logs: receipt.logs });
 
-  return memoEvents.map((ev, i) => {
+  // A tx may contain unrelated Transfers (e.g. the native gas-fee token).
+  // Pair each memo with the Transfer emitted by *its own* target token,
+  // not by position, so amounts and decimals line up correctly.
+  const targetSeen = new Map<string, number>();
+
+  return memoEvents.map((ev) => {
     const a = ev.args as {
       sender: string;
       target: string;
@@ -300,7 +305,16 @@ export async function readMemoByTx(txHash: string): Promise<MemoReceipt[]> {
     }
 
     const tokenInfo = tokenByAddress(a.target);
-    const transfer = transferEvents[i];
+
+    // Among Transfers from this memo's target token, take the next one in order.
+    const targetLc = a.target.toLowerCase();
+    const matching = transferEvents.filter(
+      (t) => (t.address as string).toLowerCase() === targetLc
+    );
+    const n = targetSeen.get(targetLc) ?? 0;
+    targetSeen.set(targetLc, n + 1);
+    const transfer = matching[n];
+
     let amount: string | null = null;
     let to: string | null = null;
     if (transfer) {
